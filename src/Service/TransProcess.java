@@ -20,13 +20,13 @@ public class TransProcess {
      * 还款交易处理
      * @param repay 还款交易
      */
-    public void repayment (Transaction repay){
+    private void repayment (Transaction repay){
         double amount = repay.getAmount();
         Date transDate = repay.getTransDate();
         for(int i=0; i<strikeOrder.size(); i+=2){
             //定位某个BP下的某个栏位,不考虑get不到的情况
             List<BalanceList> BP_field = account.getBP().get(strikeOrder.get(i)).getBalance().get(strikeOrder.get(i+1));
-            Collections.sort(BP_field, new Comparator<BalanceList>() {
+            Collections.sort(BP_field, new Comparator<BalanceList>() {  //将利率余额按从大到小排序
                 @Override
                 public int compare(BalanceList o1, BalanceList o2) {
                     if (o2.getRate() > o1.getRate())    return 1;
@@ -81,10 +81,10 @@ public class TransProcess {
         if (amount>0)   account.setOverflow(account.getOverflow()+amount);
     }
     /**
-     * 借方交易处理
+     * 借方交易入账处理
      * @param debit 借方交易
      */
-    public void debitTrans(Transaction debit){
+    private void debitTrans(Transaction debit){
         double amount = debit.getAmount();
         //处理溢缴款
         if(account.getOverflow() >= amount){
@@ -117,24 +117,24 @@ public class TransProcess {
 
     }
 
+
+
     /**
      * 根据TC决定每个交易由哪个方法处理
      * @param trans
      */
-    public void transRoute(Transaction[] trans){
-        //按入账顺序将交易排序
-        Arrays.sort(trans, new Comparator<Transaction>() {
-            @Override
-            public int compare(Transaction o1, Transaction o2) {
-                if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())<0) return 1;
-                else if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())>0)    return -1;
-                else return 0;
-            };
-        });
-        for(Transaction t : trans){
-            if(t.getTC().equals(TransCode.TC2000))  repayment(t);
-            else if(t.getTC().equals(TransCode.TC3000) || t.getTC().equals(TransCode.TC4000))   debitTrans(t);
+    public void transRoute(Transaction[] trans, int index, boolean isFirstCycleDay){
+        Transaction t = trans[index];
+        TransCode TC = t.getTC();
+        if(TC.equals(TransCode.TC2000))  repayment(t);
+        else if((TC.equals(TransCode.TC3000) && !isFirstCycleDay) //非首月才读取取现交易
+                || TC.equals(TransCode.TC4000)
+                || TC.equals(TransCode.TC4001)
+                || TC.equals(TransCode.TC4002)
+                || TC.equals(TransCode.TC4003)){
+            debitTrans(t);
         }
+
     }
 
     /**

@@ -5,6 +5,9 @@ package Model;
  */
 public enum TransCode {
     TC4000(0,1,"D", true, false),
+    TC4001(2,1,"D", true, false),
+    TC4002(2,1,"D", true, false),
+    TC4003(2,1,"D", true, false),
     TC4100(0,0,"C", false, true),
     TC3000(1,1,"D", false, true),
     TC3100(1,0,"C", false, true),

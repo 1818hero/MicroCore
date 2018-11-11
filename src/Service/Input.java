@@ -1,17 +1,20 @@
 package Service;
 
 import Model.*;
+import Utils.DateCompute;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
  *
- * 输入交易文件、参数配置文件
+ * 输入输出交易文件、参数配置文件
  * Created by Victor on 2018/9/15.
  */
 public class Input {
@@ -57,6 +60,15 @@ public class Input {
         }catch (Exception e){
             e.printStackTrace();
         }
+        //按入账顺序将交易排序
+        Arrays.sort(res, new Comparator<Transaction>() {
+            @Override
+            public int compare(Transaction o1, Transaction o2) {
+                if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())<0) return 1;
+                else if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())>0)    return -1;
+                else return 0;
+            };
+        });
         return res;
     }
 
