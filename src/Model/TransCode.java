@@ -5,10 +5,13 @@ package Model;
  */
 public enum TransCode {
     TC4000(0,1,"D", true, false),
+    TC4100(0,-1,"C", false, true),   //Todo ：贷方交易的原交易日不同，冲抵的余额也就不同
     TC4001(2,1,"D", true, false),
+    TC4101(2,-1,"C", true, false),
     TC4002(2,1,"D", true, false),
+    TC4102(2,-1,"C", true, false),
     TC4003(2,1,"D", true, false),
-    TC4100(0,0,"C", false, true),
+    TC4103(2,-1,"C", true, false),
     TC3000(1,1,"D", false, true),
     TC3100(1,0,"C", false, true),
     TC2000(-1,-1,"R", false, true);

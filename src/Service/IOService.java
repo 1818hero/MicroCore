@@ -17,7 +17,7 @@ import java.util.List;
  * 输入输出交易文件、参数配置文件
  * Created by Victor on 2018/9/15.
  */
-public class Input {
+public class IOService {
     /**
      * 交易文件、参数配置文件读取
      * @return 返回读取字符串

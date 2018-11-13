@@ -4,11 +4,14 @@ import Model.Account;
 import Model.Transaction;
 import Utils.DateCompute;
 
-import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 /**
- * 调度系统时间，即计算并排序入账日、账单日、还款日
+ * 调度系统：
+ * 1. 计算并排序入账日、账单日等,并在时间顺序每日进行批次处理
+ * 2. 加载每日参数，决定在什么情况下使用哪套参数
  * Created by Victor on 2018/11/10.
  */
 public class Dispatcher {
@@ -16,6 +19,18 @@ public class Dispatcher {
     DayProcess DP;
     TransProcess TP;
     Transaction[] transList;
+    /**
+     * K： Account的延滞状态
+     * V： 该延滞状态下使用的strikeOrder
+     */
+    Map<Integer, Integer> strikeOrderDispatcher;
+    /**
+     * K: Account的延滞状态
+     * V：该延滞状态下，各余额是否免FEE
+     */
+    Map<Integer,List<Boolean>> waiveDispacher;
+
+
     boolean isFirstCycleDay = true;
     int freeIntInterval = 18;   //免息期
     int graceDayInterval = 3;   //宽限期
@@ -36,7 +51,6 @@ public class Dispatcher {
         Date today = startDate;
         int transIndex = 0;         //标识执行到第几条交易
         while(!today.equals(endDate)){
-
             while (transIndex < transList.length &&
                     DateCompute.getIntervalDays(transList[transIndex].getRecordDate(), today) >= 0){
                 if(transList[transIndex].getRecordDate().equals(today)){
@@ -45,14 +59,14 @@ public class Dispatcher {
                 transIndex += 1;
             }
 
-            if(DateCompute.getDate(today)==account.getCycleDay()){
+            if(DateCompute.getDayOfMonth(today)==account.getCycleDay()){
                 DP.cycleDayProcess(isFirstCycleDay);
                 if(isFirstCycleDay) isFirstCycleDay = false;    //首个账单日应该不计算利息
             }
-            if(DateCompute.getDate(today)==account.getLastPaymentDay()){
+            if(DateCompute.getDayOfMonth(today)==account.getLastPaymentDay()){
                 DP.lastPaymentDayProcess();
             }
-            if(DateCompute.getDate(today)==account.getGraceDay()){
+            if(DateCompute.getDayOfMonth(today)==account.getGraceDay()){
                 DP.graceDayProcess();
             }
             today = DateCompute.addDate(today,1);

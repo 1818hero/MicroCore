@@ -13,73 +13,73 @@ public class TransProcess {
     Account account;
 
     /**
-     * 冲账顺序strikeOrder:每两个数从Account中定位一个余额栏位
+     * 冲账顺序strikeOrderList:每两个数从Account中定位一个余额栏位,可支持多个不同的strikeOrder参数片
      */
-    List<Integer> strikeOrder;
+    List<List<Integer>> strikeOrderList;
+
     /**
      * 还款交易处理
      * @param repay 还款交易
      */
-    private void repayment (Transaction repay){
+    private void repayment (Transaction repay, int strikeOrderIndex){
         double amount = repay.getAmount();
-        Date transDate = repay.getTransDate();
+        List<Integer> strikeOrder = strikeOrderList.get(strikeOrderIndex);
         for(int i=0; i<strikeOrder.size(); i+=2){
             //定位某个BP下的某个栏位,不考虑get不到的情况
             List<BalanceList> BP_field = account.getBP().get(strikeOrder.get(i)).getBalance().get(strikeOrder.get(i+1));
-            Collections.sort(BP_field, new Comparator<BalanceList>() {  //将利率余额按从大到小排序
-                @Override
-                public int compare(BalanceList o1, BalanceList o2) {
-                    if (o2.getRate() > o1.getRate())    return 1;
-                    else if(o1.getRate() > o2.getRate())    return -1;
-                    return 0;
-                }
-            });
-            for(BalanceList BL : BP_field){
-                ListIterator it = BL.getBL().listIterator();
-                while(it.hasNext()){
-                    BalanceNode node = (BalanceNode) it.next();
-                    if (!node.isExist())    continue;              //如果该BalanceList已被冲掉，那么则冲抵下一个余额栏位
-                    if (amount > 0) node.setExist(false);          //若该还款还有余额，则该node死亡
-                    node.setEndDate(account.getToday());           //这里没有回算,Todo 后续考虑Today和入账日同步问题
-                    if(!node.getBL().getBP().isWaive()) {          //判断是否免息
-                        //计算利息
-                        node.setIntrests(node.getAmount() * BL.getRate()
-                                * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate())));
-                        //回算逻辑：node余额*利率*（入账日-交易日）
-                        node.setTracebackAmount(-node.getAmount() * BL.getRate()
-                                * (DateCompute.getIntervalDays(transDate, node.getEndDate())));
-                    }
-                    if (amount >= node.getAmount()){
-                        /**
-                         * 若还款金额足以冲抵该node，则冲抵完该node后剩余amount进一步冲抵下一个node
-                         */
-                        amount -= node.getAmount();
-                    }
-                    else{
-                        /**
-                         * 若还款金额不足以冲抵该node，则在node后插入一个新的node用于记录还款后的金额
-                         */
-
-                        BalanceNode leftNode = new BalanceNode(BL,node.getAmount()-amount,
-                                account.getToday(),
-                                account.getToday(),
-                                node.isFreeInt(),
-                                node.getSummary());
-                        it.add(leftNode);
-                        return;
-                        //it.previous();  //这样才能遍历到新增的节点
-
-                    }
-
-                }
-            }
-
+ //            //将利率余额按从大到小排序,这一步应该是在新增利率余额的时候做
+//            Collections.sort(BP_field, new Comparator<BalanceList>() {
+//                @Override
+//                public int compare(BalanceList o1, BalanceList o2) {
+//                    if (o2.getRate() > o1.getRate())    return 1;
+//                    else if(o1.getRate() > o2.getRate())    return -1;
+//                    return 0;
+//                }
+//            });
+            amount = strikeAndAccr(BP_field, amount, repay);    //冲抵了一个栏位后剩余的金额
+            if (amount==0)  break;
         }
         /**
          * 若冲抵了所有余额还有剩余，则存入溢缴款
          */
-        if (amount>0)   account.setOverflow(account.getOverflow()+amount);
+        if (amount > 0)   account.setOverflow(account.getOverflow() + amount);
     }
+
+
+    /**
+     * 贷方交易入账处理
+     * @param credit
+     */
+    private void creditTrans (Transaction credit, int strikeOrderIndex){
+        double amount = credit.getAmount();
+        Date transDate = credit.getTransDate();
+        Date recordDate = credit.getRecordDate();
+        List<Integer> strikeOrder = strikeOrderList.get(strikeOrderIndex);
+        int res = DateCompute.judgeCycle(account.getCycleDay(),transDate,recordDate);
+        int targetField;
+        boolean traceback = true;
+        if(res==0){         //交易日在当期
+            targetField = 1;    //冲抵CTD
+        }
+        else{              //交易日在往期
+            targetField = 0;    //冲抵BNP
+        }
+        //从冲账顺序表中查找冲抵栏位
+        boolean findhead = false;
+        for(int i=0; i<strikeOrder.size(); i+=2){
+            if(strikeOrder.get(i) == credit.getTC().getBP()
+                    && strikeOrder.get(i+1) == targetField){
+                findhead = true;
+            }
+            if(findhead){
+                List<BalanceList> BP_field = account.getBP().get(strikeOrder.get(i)).getBalance().get(strikeOrder.get(i+1));
+                amount = strikeAndAccr(BP_field, amount, credit);
+            }
+        }
+        // Todo 贷方交易的回算怎么办
+
+    }
+
     /**
      * 借方交易入账处理
      * @param debit 借方交易
@@ -113,7 +113,7 @@ public class TransProcess {
         Date startDate;
         if (TC.isTraceback())    startDate = debit.getTransDate();
         else    startDate = debit.getRecordDate();
-        field.get(index).getBL().addLast(new BalanceNode(field.get(index),amount,startDate,account.getToday(),TC.isFreeInt(),debit.getSummary()));
+        field.get(index).getBL().addLast(new BalanceNode(field.get(index),amount,startDate,debit.getRecordDate(),TC.isFreeInt(),debit.getSummary()));
 
     }
 
@@ -126,19 +126,21 @@ public class TransProcess {
     public void transRoute(Transaction[] trans, int index, boolean isFirstCycleDay){
         Transaction t = trans[index];
         TransCode TC = t.getTC();
-        if(TC.equals(TransCode.TC2000))  repayment(t);
+        if(TC.equals(TransCode.TC2000))  repayment(t, 0);    //Todo 暂未区分90天以内和90天以上
         else if((TC.equals(TransCode.TC3000) && !isFirstCycleDay) //非首月才读取取现交易
-                || TC.equals(TransCode.TC4000)
+                || TC.equals(TransCode.TC4000)  //Todo 利用反射批量处理400x这样的TC
                 || TC.equals(TransCode.TC4001)
                 || TC.equals(TransCode.TC4002)
                 || TC.equals(TransCode.TC4003)){
             debitTrans(t);
         }
-
+        else{
+            creditTrans(t,0);
+        }
     }
 
     /**
-     * 工具类用于查找某个栏位的利率余额 （等效Collections.binarySearch()）
+     * 用于查找某个栏位的利率余额的工具类 （等效Collections.binarySearch()）
      * @param field
      * @return accRate在利率余额列表中的的index或比accRate大的最近的index，若accRate比最大利率余额的利率的还大，则返回-1
      *
@@ -159,8 +161,62 @@ public class TransProcess {
         else return left-1;
     }
 
-    public TransProcess(Account account, List<Integer> strikeOrder) {
+    /**
+     * 冲抵某个余额栏位，包含冲抵各个node的计息、回算逻辑
+     * @param BP_field  余额栏位
+     * @param amount    还款或贷方交易的剩余金额
+     * @param tr        还款或贷方交易
+     * @return  剩余的还款或贷方金额
+     */
+    private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr){
+        for(BalanceList BL : BP_field){
+            ListIterator it = BL.getBL().listIterator();
+            while(it.hasNext()){
+                BalanceNode node = (BalanceNode) it.next();
+                if (!node.isExist())    continue;              //如果该BalanceList已被冲掉，那么则冲抵下一个余额栏位
+                if (amount > 0) node.setExist(false);          //若该还款还有余额，则该node死亡
+                node.setEndDate(tr.getRecordDate());           //这里没有回算
+                if(!node.getBL().getBP().isWaive()) {          //判断waive标识
+                    //计算利息
+                    node.setIntrests(node.getAmount() * BL.getRate()
+                            * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate())));
+                    //还款交易回算逻辑：Min(交易金额，node余额)*利率*（入账日-交易日）
+                    //两周期前的交易不回算
+                    if(DateCompute.judgeCycle(account.getCycleDay(), tr.getTransDate(), tr.getRecordDate()) < 2) {
+                        //还款交易的回算按实际冲抵余额进行回算
+                        if(tr.getTC().equals(TransCode.TC2000)){
+                            node.setTracebackAmount(-Math.min(node.getAmount(), amount) * BL.getRate()
+                                    * (DateCompute.getIntervalDays(tr.getTransDate(), node.getEndDate())));
+                        }
+                    }
+                }
+                if (amount >= node.getAmount()){
+                    /**
+                     * 若还款金额足以冲抵该node，则冲抵完该node后剩余amount进一步冲抵下一个node
+                     */
+                    amount -= node.getAmount();
+                }
+                else{
+                    /**
+                     * 若还款金额不足以冲抵该node，则在node后插入一个新的node用于记录还款后的金额
+                     */
+
+                    BalanceNode leftNode = new BalanceNode(BL,node.getAmount()-amount,
+                            tr.getRecordDate(),
+                            tr.getRecordDate(),
+                            node.isFreeInt(),
+                            node.getSummary());
+                    it.add(leftNode);
+                    return 0.0;
+                    //it.previous();  //这样才能遍历到新增的节点
+                }
+            }
+        }
+        return amount;
+    }
+
+    public TransProcess(Account account, List<List<Integer>> strikeOrderList) {
         this.account = account;
-        this.strikeOrder = strikeOrder;
+        this.strikeOrderList = strikeOrderList;
     }
 }
