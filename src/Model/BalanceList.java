@@ -11,6 +11,7 @@ public class BalanceList {
     BalanceProgram BP;              //该BalanceList所属BP
     LinkedList<BalanceNode> BL;
     double rate;                    //该BalanceList的利率参数片
+    double ACCR;                    //该BalanceList累积的未出利息
 
     public LinkedList<BalanceNode> getBL() {
         return BL;

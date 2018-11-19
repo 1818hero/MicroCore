@@ -55,27 +55,27 @@ public class TransProcess {
         Date transDate = credit.getTransDate();
         Date recordDate = credit.getRecordDate();
         List<Integer> strikeOrder = strikeOrderList.get(strikeOrderIndex);
-        int res = DateCompute.judgeCycle(account.getCycleDay(),transDate,recordDate);
+        int original = DateCompute.judgeCycle(account.getCycleDay(),transDate,recordDate);
         int targetField;
         boolean traceback = true;
-        if(res==0){         //交易日在当期
+        if(original==0){         //交易日在当期
             targetField = 1;    //冲抵CTD
         }
-        else{              //交易日在往期
+        else{                   //交易日在往期
             targetField = 0;    //冲抵BNP
         }
         //从冲账顺序表中查找冲抵栏位
-        boolean findhead = false;
-        for(int i=0; i<strikeOrder.size(); i+=2){
-            if(strikeOrder.get(i) == credit.getTC().getBP()
-                    && strikeOrder.get(i+1) == targetField){
-                findhead = true;
-            }
-            if(findhead){
-                List<BalanceList> BP_field = account.getBP().get(strikeOrder.get(i)).getBalance().get(strikeOrder.get(i+1));
-                amount = strikeAndAccr(BP_field, amount, credit);
-            }
+        List<BalanceList> BP_field = account.getBP().get(credit.getTC().getBP()).getBalance().get(targetField);
+        amount = strikeAndAccr(BP_field, amount, credit);
+        int index = 0;
+        while(amount > 0 && index < strikeOrder.size()-1){
+            BP_field = account.getBP().get(strikeOrder.get(index)).getBalance().get(strikeOrder.get(index+1));
+            amount = strikeAndAccr(BP_field, amount, credit);    //冲抵了一个栏位后剩余的金额
         }
+        /**
+         * 若冲抵了所有余额还有剩余，则存入溢缴款
+         */
+        if (amount > 0)   account.setOverflow(account.getOverflow() + amount);
         // Todo 贷方交易的回算怎么办
 
     }
@@ -175,12 +175,13 @@ public class TransProcess {
                 BalanceNode node = (BalanceNode) it.next();
                 if (!node.isExist())    continue;              //如果该BalanceList已被冲掉，那么则冲抵下一个余额栏位
                 if (amount > 0) node.setExist(false);          //若该还款还有余额，则该node死亡
-                node.setEndDate(tr.getRecordDate());           //这里没有回算
+                node.setEndDate(tr.getRecordDate());
                 if(!node.getBL().getBP().isWaive()) {          //判断waive标识
                     //计算利息
                     node.setIntrests(node.getAmount() * BL.getRate()
                             * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate())));
                     //还款交易回算逻辑：Min(交易金额，node余额)*利率*（入账日-交易日）
+                    //Todo: 将回算改为新增一个Node，并且增加该BalanceList中的ACCR用于精确回算值
                     //两周期前的交易不回算
                     if(DateCompute.judgeCycle(account.getCycleDay(), tr.getTransDate(), tr.getRecordDate()) < 2) {
                         //还款交易的回算按实际冲抵余额进行回算
