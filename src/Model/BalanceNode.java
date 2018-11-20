@@ -20,17 +20,17 @@ public class BalanceNode {
     boolean freeInt;    //是否在免息期
     double ACCR;        //ACCR总额
     double intrests;    //计息总额
-    double tracebackAmount; //回算金额
-    boolean exist;      //是否存在，当为False时，不再更新止息日
+    //double tracebackAmount; //回算金额
+    boolean exist;          //node是否存活，当为False时，不再更新止息日
 
-    public double getTracebackAmount() {
-        return tracebackAmount;
-    }
-
-    public void setTracebackAmount(double tracebackAmount) {
-        this.tracebackAmount = tracebackAmount;
-    }
-
+//    public double getTracebackAmount() {
+//        return tracebackAmount;
+//    }
+//
+//    public void setTracebackAmount(double tracebackAmount) {
+//        this.tracebackAmount = tracebackAmount;
+//    }
+//
 
     public boolean isExist() {
         return exist;
@@ -112,7 +112,7 @@ public class BalanceNode {
         this.endDate = endDate;
         this.freeInt = freeInt;
         this.intrests = 0;
-        this.tracebackAmount = 0;
+        //this.tracebackAmount = 0;
         this.exist = true;
         this.summary = summary;
     }

@@ -36,6 +36,15 @@ public class BalanceList {
     public void setRate(double rate) {
         this.rate = rate;
     }
+
+    public double getACCR() {
+        return ACCR;
+    }
+
+    public void setACCR(double ACCR) {
+        this.ACCR = ACCR;
+    }
+
     public BalanceList(BalanceProgram BP, double rate){
         this.BP = BP;
         this.rate = rate;

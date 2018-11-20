@@ -1,6 +1,8 @@
+import Model.TransCode;
 import Utils.DateCompute;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Main {
     public static void main(String[] args) {
@@ -22,7 +24,8 @@ public class Main {
 //        //TRservice.transRoute(trList);
 //        System.out.println("读取完成");
         Date date = DateCompute.dateForm("2018-12-31");
-
+        System.out.println(TransCode.TC3100.toString().substring(2));
+        System.out.println(Pattern.matches("\\d1..",TransCode.TC3100.toString().substring(2)));
         System.out.println(DateCompute.addDate(date,-2));
     }
 }

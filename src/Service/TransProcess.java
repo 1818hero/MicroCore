@@ -4,6 +4,7 @@ import Model.*;
 import Utils.DateCompute;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * 交易处理
@@ -77,6 +78,7 @@ public class TransProcess {
          */
         if (amount > 0)   account.setOverflow(account.getOverflow() + amount);
         // Todo 贷方交易的回算怎么办
+
 
     }
 
@@ -168,41 +170,35 @@ public class TransProcess {
      * @param tr        还款或贷方交易
      * @return  剩余的还款或贷方金额
      */
-    private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr){
-        for(BalanceList BL : BP_field){
+    private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr) {
+        double oriAmount = amount;   //备份原金额
+        for (BalanceList BL : BP_field) {
             ListIterator it = BL.getBL().listIterator();
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 BalanceNode node = (BalanceNode) it.next();
-                if (!node.isExist())    continue;              //如果该BalanceList已被冲掉，那么则冲抵下一个余额栏位
+                if (!node.isExist()) continue;              //如果该BalanceList已被冲掉，那么则冲抵下一个余额栏位
                 if (amount > 0) node.setExist(false);          //若该还款还有余额，则该node死亡
                 node.setEndDate(tr.getRecordDate());
-                if(!node.getBL().getBP().isWaive()) {          //判断waive标识
+                if (!node.getBL().getBP().isWaive()) {          //判断waive标识
                     //计算利息
                     node.setIntrests(node.getAmount() * BL.getRate()
                             * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate())));
                     //还款交易回算逻辑：Min(交易金额，node余额)*利率*（入账日-交易日）
-                    //Todo: 将回算改为新增一个Node，并且增加该BalanceList中的ACCR用于精确回算值
-                    //两周期前的交易不回算
-                    if(DateCompute.judgeCycle(account.getCycleDay(), tr.getTransDate(), tr.getRecordDate()) < 2) {
-                        //还款交易的回算按实际冲抵余额进行回算
-                        if(tr.getTC().equals(TransCode.TC2000)){
-                            node.setTracebackAmount(-Math.min(node.getAmount(), amount) * BL.getRate()
-                                    * (DateCompute.getIntervalDays(tr.getTransDate(), node.getEndDate())));
-                        }
-                    }
                 }
-                if (amount >= node.getAmount()){
+                if (amount >= node.getAmount()) {
                     /**
                      * 若还款金额足以冲抵该node，则冲抵完该node后剩余amount进一步冲抵下一个node
                      */
                     amount -= node.getAmount();
-                }
-                else{
+                } else {
                     /**
-                     * 若还款金额不足以冲抵该node，则在node后插入一个新的node用于记录还款后的金额
+                     * 若还款金额不足以冲抵该node，则
+                     * 1. 在node后插入一个node用于记录回算本金
+                     * 2. 在node后插入一个新的node用于记录还款后的金额
                      */
-
-                    BalanceNode leftNode = new BalanceNode(BL,node.getAmount()-amount,
+                    BalanceNode tracebackNode = addTracebackNode(BL,tr,oriAmount);
+                    if(tracebackNode!=null) it.add(tracebackNode);
+                    BalanceNode leftNode = new BalanceNode(BL, node.getAmount() - amount,
                             tr.getRecordDate(),
                             tr.getRecordDate(),
                             node.isFreeInt(),
@@ -212,12 +208,36 @@ public class TransProcess {
                     //it.previous();  //这样才能遍历到新增的节点
                 }
             }
+            //还款冲抵该利率余额未冲抵完,则将冲抵部分的回算node添加至末尾
+            BalanceNode tracebackNode = addTracebackNode(BL,tr,oriAmount-amount);
+            if(tracebackNode!=null) BL.getBL().addLast(tracebackNode);
+            oriAmount = amount;
         }
         return amount;
     }
+
+    private BalanceNode addTracebackNode(BalanceList BL, Transaction  tr, double tracebackAmount){
+        //两周期前的还款交易不回算
+        if(tr.getTC().equals(TransCode.TC2000) && DateCompute.judgeCycle(account.getCycleDay(), tr.getTransDate(), tr.getRecordDate()) < 2) {
+            BalanceNode tracebackNode = new BalanceNode(BL,
+                    tracebackAmount,
+                    tr.getTransDate(),
+                    tr.getRecordDate(),
+                    false,
+                    "还款交易回算" );
+            tracebackNode.setExist(false);
+            tracebackNode.setIntrests(tracebackNode.getAmount() * BL.getRate()
+                    * (DateCompute.getIntervalDays(tracebackNode.getStartDate(), tracebackNode.getEndDate())));
+            return tracebackNode;
+        }
+        return null;
+    }
+
 
     public TransProcess(Account account, List<List<Integer>> strikeOrderList) {
         this.account = account;
         this.strikeOrderList = strikeOrderList;
     }
+
+
 }
