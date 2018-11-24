@@ -8,18 +8,25 @@ import java.util.Date;
  */
 public class BalanceNode {
     BalanceList BL; //该Node所属BalanceList
+    //Date recordDate;//入账日（暂未使用）
     double amount;  //金额
     Date startDate; //起息日
     Date endDate;   //止息日
     String summary; //摘要
+    int billout;    //是否已出账，0表示未出，1表示已出
     /**
      * freeInt：是否处在免息期
-     * 当为True时：ACCR累计利息，账单日时ACCR不迁移到intrests
-     * 最后还款日时，若freeInt为True，则变为False
+     * 当为True时：计息值不发生迁移
+     * 最后还款日时，若已出账且freeInt为True，则freeInt变为False
      */
     boolean freeInt;    //是否在免息期
-    double ACCR;        //ACCR总额
-    double intrests;    //计息总额
+    /**
+     * 计息值intrests：
+     * if freeInt==true and billout==0 ：intrests累计在PROV栏位
+     * else：intrests累计在ACCR栏位
+     *
+     */
+    double intrests;          //计息值
     //double tracebackAmount; //回算金额
     boolean exist;          //node是否存活，当为False时，不再更新止息日
 
@@ -89,14 +96,6 @@ public class BalanceNode {
         this.BL = BL;
     }
 
-    public double getACCR() {
-        return ACCR;
-    }
-
-    public void setACCR(double ACCR) {
-        this.ACCR = ACCR;
-    }
-
     public String getSummary() {
         return summary;
     }
@@ -105,7 +104,15 @@ public class BalanceNode {
         this.summary = summary;
     }
 
-    public BalanceNode(BalanceList BL, double amount, Date startDate, Date endDate, boolean freeInt, String summary) {
+    public int getBillout() {
+        return billout;
+    }
+
+    public void setBillout(int billout) {
+        this.billout = billout;
+    }
+
+    public BalanceNode(BalanceList BL, double amount, Date startDate, Date endDate, boolean freeInt, String summary, int billout) {
         this.BL = BL;
         this.amount = amount;
         this.startDate = startDate;
@@ -115,5 +122,6 @@ public class BalanceNode {
         //this.tracebackAmount = 0;
         this.exist = true;
         this.summary = summary;
+        this.billout = billout;
     }
 }

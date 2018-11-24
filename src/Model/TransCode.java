@@ -5,7 +5,7 @@ package Model;
  */
 public enum TransCode {
     TC4000(0,1,"D", true, false),
-    TC4100(0,-1,"C", false, true),   //Todo ：贷方交易的原交易日不同，冲抵的余额也就不同
+    TC4100(0,-1,"C", false, true),
     TC4001(2,1,"D", true, false),
     TC4101(2,-1,"C", true, false),
     TC4002(2,1,"D", true, false),
@@ -33,7 +33,7 @@ public enum TransCode {
     private int field;   //栏位对应的序号
     private String direction;   //交易方向（D：借方；C：贷方；R:还款）
     private boolean traceback;  //该交易是否回算
-    private boolean freeInt;
+    private boolean freeInt;    //该交易是否为免息交易
 
     public int getBP() {
         return BP;

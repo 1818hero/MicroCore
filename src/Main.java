@@ -27,5 +27,6 @@ public class Main {
         System.out.println(TransCode.TC3100.toString().substring(2));
         System.out.println(Pattern.matches("\\d1..",TransCode.TC3100.toString().substring(2)));
         System.out.println(DateCompute.addDate(date,-2));
+
     }
 }

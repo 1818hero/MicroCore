@@ -15,11 +15,9 @@ public class BalanceProgram {
     String productAttr = "";//业务属性
     boolean waive = false;   //生息标识,若为true则该BP下的所有余额不生息
     /**
-     * 账户余额List
-     * 0：BNP
-     * 1：CTD
-     * 2：FEE_BNP
-     * 3：FEE_CTD
+     * 账户余额List分两个栏位
+     * 0: Balance
+     * 1: FEE
      * 每个List由若干不同利率的余额链构成
      */
     List<List<BalanceList>> balance;
@@ -27,9 +25,10 @@ public class BalanceProgram {
     public BalanceProgram(Account account) {
         this.account = account;
         balance = new ArrayList<List<BalanceList>>();
-        for(int i=0; i<4; i++){
-            BalanceList BL = new BalanceList(this,0.0005);
-            balance.add(new ArrayList<>());
+        for(int i=0; i<2; i++){
+            ArrayList<BalanceList> tmp = new ArrayList<>();
+            tmp.add(new BalanceList(this,0.0005));
+            balance.add(tmp);
         }
     }
 

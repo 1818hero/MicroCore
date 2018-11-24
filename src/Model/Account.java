@@ -9,13 +9,11 @@ import java.util.List;
  * 账户结构
  * + Account
  *    - BP(RTL)
- *      - Field（BNP）
+ *      - Field（Balance）
  *          - 高利率BalanceList
  *              - BalanceNode链表
  *          - 低利率BalanceList
- *      - Field (CTD)
- *      - Field (FEE BNP)
- *      - Field (FEE CTD)
+ *      - Field (FEE)
  *    - BP(CSH)
  *    - BP(分期)
  *    - BP(FEE)
@@ -24,7 +22,7 @@ import java.util.List;
 public class Account {
     List<BalanceProgram> BP = new ArrayList<>();   //账户余额
     double overflow=0;          //溢缴款
-    int cycleDay;               //账单日（每月几号）可以写死也可以根据Dispatcher的方法计算得到
+    int cycleDay;               //账单日（每月几号）
     int lastPaymentDay;         //最后还款日（每月几号）
     int graceDay;               //宽限日（每月几号）
     Date startDate;             //账户初始日期

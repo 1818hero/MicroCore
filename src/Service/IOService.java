@@ -60,13 +60,14 @@ public class IOService {
         }catch (Exception e){
             e.printStackTrace();
         }
-        //按入账顺序将交易排序
+        //按入账顺序和TC将交易排序
         Arrays.sort(res, new Comparator<Transaction>() {
             @Override
             public int compare(Transaction o1, Transaction o2) {
                 if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())<0) return 1;
                 else if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())>0)    return -1;
-                else return 0;
+                else return Integer.parseInt(o1.getTC().toString().substring(2))
+                            - Integer.parseInt(o2.getTC().toString().substring(2));
             };
         });
         return res;

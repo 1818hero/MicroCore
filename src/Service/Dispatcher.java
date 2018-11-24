@@ -22,6 +22,7 @@ public class Dispatcher {
     /**
      * K： Account的延滞状态
      * V： 该延滞状态下使用的strikeOrder
+     *
      */
     Map<Integer, Integer> strikeOrderDispatcher;
     /**
@@ -31,7 +32,7 @@ public class Dispatcher {
     Map<Integer,List<Boolean>> waiveDispacher;
 
 
-    boolean isFirstCycleDay = true;
+    boolean isFirstCycleDay = true; //是否为计算利息的首个账期
     int freeIntInterval = 18;   //免息期
     int graceDayInterval = 3;   //宽限期
 
@@ -46,22 +47,25 @@ public class Dispatcher {
 
     /**
      * 分发方法，从startDate到endDate的每一天处理
+     * 处理顺序：
+     * 1. 处理每一天的交易
+     * 2. 依次判断是否为账单日、还款日、宽限日，并执行对应逻辑
      */
     public void dispatcher(){
         Date today = startDate;
         int transIndex = 0;         //标识执行到第几条交易
         while(!today.equals(endDate)){
             while (transIndex < transList.length &&
-                    DateCompute.getIntervalDays(transList[transIndex].getRecordDate(), today) >= 0){
+                    DateCompute.getIntervalDays(transList[transIndex].getRecordDate(), today) == 0){
                 if(transList[transIndex].getRecordDate().equals(today)){
-                    TP.transRoute(transList, transIndex, isFirstCycleDay);
+                    //根据账户延滞状态判断采用哪套冲账顺序
+                    TP.transRoute(transList, transIndex, isFirstCycleDay, strikeOrderDispatcher.get(account.getLate()));
                 }
                 transIndex += 1;
             }
-
             if(DateCompute.getDayOfMonth(today)==account.getCycleDay()){
                 DP.cycleDayProcess(isFirstCycleDay);
-                if(isFirstCycleDay) isFirstCycleDay = false;    //首个账单日应该不计算利息
+                if(isFirstCycleDay) isFirstCycleDay = false;    //首个账单日不计算利息
             }
             if(DateCompute.getDayOfMonth(today)==account.getLastPaymentDay()){
                 DP.lastPaymentDayProcess();
