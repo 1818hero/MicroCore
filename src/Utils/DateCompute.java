@@ -35,8 +35,10 @@ public class DateCompute {
      */
     @Nullable
     public static Date dateForm(String s){
+        int type = s.split("-").length;
         try {
-            return new SimpleDateFormat("yyyy-MM-dd").parse(s);
+            if(type==3) return new SimpleDateFormat("yyyy-MM-dd").parse(s);
+            if(type==2) return new SimpleDateFormat("yyyy-MM").parse(s);
         }catch (ParseException e){
             e.getErrorOffset();
         }
@@ -106,17 +108,20 @@ public class DateCompute {
     }
 
     /**
+     * Todo 未考虑改cycle的情况
      * 判断原交易日在哪个账单周期
      * @param cycleDay  账单日cycle
      * @param transDate 原交易日
      * @param recordDate 入账日
      * @return
+     * -1: 原交易日大于入账日
      * 0：原交易日在当期
      * 1：原交易日在上期
      * 2：原交易日在两周期前
      */
 
     public static int judgeCycle(int cycleDay, Date transDate, Date recordDate){
+        if(DateCompute.getIntervalDays(transDate, recordDate) < 0)  return -1;
         Date lastCycleDay = DateCompute.getDate(DateCompute.getYear(recordDate),DateCompute.getMonth(recordDate),cycleDay);
         if(DateCompute.getIntervalDays(lastCycleDay, recordDate) < 0){
             lastCycleDay = DateCompute.addMonth(lastCycleDay, -1);

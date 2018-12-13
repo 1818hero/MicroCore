@@ -14,7 +14,8 @@ public enum TransCode {
     TC4103(2,-1,"C", true, false),
     TC3000(1,1,"D", false, true),
     TC3100(1,0,"C", false, true),
-    TC2000(-1,-1,"R", false, true);
+    TC2000(-1,-1,"R", false, true),
+    TC9698(-1,-1,"I",false,false);
     /**
      * BP对应的序号:
      * 0: RTL1

@@ -14,6 +14,7 @@ public class BalanceProgram {
     String assetAttr = "";  //资产属性
     String productAttr = "";//业务属性
     boolean waive = false;   //生息标识,若为true则该BP下的所有余额不生息
+    boolean freeInt = false; //免息标识，若为true则表示该BP下的Node享受免息期
     /**
      * 账户余额List分两个栏位
      * 0: Balance
@@ -70,5 +71,13 @@ public class BalanceProgram {
 
     public void setBalance(List<List<BalanceList>> balance) {
         this.balance = balance;
+    }
+
+    public boolean isFreeInt() {
+        return freeInt;
+    }
+
+    public void setFreeInt(boolean freeInt) {
+        this.freeInt = freeInt;
     }
 }

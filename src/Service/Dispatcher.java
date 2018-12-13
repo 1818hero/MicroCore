@@ -59,12 +59,12 @@ public class Dispatcher {
                     DateCompute.getIntervalDays(transList[transIndex].getRecordDate(), today) == 0){
                 if(transList[transIndex].getRecordDate().equals(today)){
                     //根据账户延滞状态判断采用哪套冲账顺序
-                    TP.transRoute(transList, transIndex, isFirstCycleDay, strikeOrderDispatcher.get(account.getLate()));
+                    TP.transRoute(transList[transIndex], isFirstCycleDay, strikeOrderDispatcher.get(account.getLate()),today);
                 }
                 transIndex += 1;
             }
             if(DateCompute.getDayOfMonth(today)==account.getCycleDay()){
-                DP.cycleDayProcess(isFirstCycleDay);
+                DP.cycleDayProcess(isFirstCycleDay, today);
                 if(isFirstCycleDay) isFirstCycleDay = false;    //首个账单日不计算利息
             }
             if(DateCompute.getDayOfMonth(today)==account.getLastPaymentDay()){

@@ -19,16 +19,25 @@ public class TransProcess {
     List<List<Integer>> strikeOrderList;
 
     /**
+     * 处理循环利息交易
+     * @param interst
+     */
+    private void processInterest(Transaction interst, Date today){
+        account.getAnswer().put(today, interst.getAmount());
+        account.setAnswer(account.getAnswer());
+    }
+
+    /**
      * 还款交易处理
      * @param repay 还款交易
      */
-    private void repayment (Transaction repay, int strikeOrderIndex){
+    private void repayment (Transaction repay, int strikeOrderIndex, Date today){
         double amount = Math.abs(repay.getAmount()); //该值在交易读取时为负值，先取绝对值
         List<Integer> strikeOrder = strikeOrderList.get(strikeOrderIndex);
         for(int i=0; i<strikeOrder.size(); i+=3){
             //定位某个BP下的某个栏位,不考虑get不到的情况
             List<BalanceList> BP_field = account.getBP().get(strikeOrder.get(i)).getBalance().get(strikeOrder.get(i+1));
-            amount = strikeAndAccr(BP_field, amount, repay, strikeOrder.get(i+2));    //冲抵了一个栏位后剩余的金额
+            amount = strikeAndAccr(BP_field, amount, repay, strikeOrder.get(i+2), today);    //冲抵了一个栏位后剩余的金额
             if (amount==0.0)  break;
         }
         /**
@@ -42,7 +51,7 @@ public class TransProcess {
      * 贷方交易入账处理
      * @param credit
      */
-    private void creditTrans (Transaction credit, int strikeOrderIndex){
+    private void creditTrans (Transaction credit, int strikeOrderIndex, Date today){
         double amount = Math.abs(credit.getAmount());
         Date transDate = credit.getTransDate();
         Date recordDate = credit.getRecordDate();
@@ -57,11 +66,11 @@ public class TransProcess {
         //Todo 这里按一种利率处理贷方回算，写死
         addTracebackNode(BP_field.get(0), credit, credit.getAmount(),billout);
 
-        amount = strikeAndAccr(BP_field, amount, credit, billout);
+        amount = strikeAndAccr(BP_field, amount, credit, billout, today);
         int index = 0;
         while(amount > 0 && index < strikeOrder.size()-1){
             BP_field = account.getBP().get(strikeOrder.get(index)).getBalance().get(strikeOrder.get(index+1));
-            amount = strikeAndAccr(BP_field, amount, credit, billout);    //冲抵了一个栏位后剩余的金额
+            amount = strikeAndAccr(BP_field, amount, credit, billout, today);    //冲抵了一个栏位后剩余的金额
         }
         /**
          * 若冲抵了所有余额还有剩余，则存入溢缴款
@@ -73,7 +82,7 @@ public class TransProcess {
      * 借方交易入账处理
      * @param debit 借方交易
      */
-    private void debitTrans(Transaction debit){
+    private void debitTrans(Transaction debit, boolean isFirstCycle){
         double amount = debit.getAmount();
         //处理溢缴款
         if(account.getOverflow() >= amount){
@@ -102,26 +111,33 @@ public class TransProcess {
         Date startDate;
         if (TC.isTraceback())    startDate = debit.getTransDate();
         else    startDate = debit.getRecordDate();  //以交易属性直接判断是否回算
-        field.get(index).getBL().addLast(new BalanceNode(field.get(index),amount,startDate,debit.getRecordDate(),TC.isFreeInt(),debit.getSummary(),0));
+        field.get(index).getBL().addLast(new BalanceNode(field.get(index),amount,startDate,debit.getRecordDate(),debit.getRecordDate(),TC.isFreeInt(),debit.getSummary(),0));
 
     }
 
 
 
+
+
     /**
      * 根据TC决定每个交易由哪个方法处理
-     * @param trans
+     * @param
      */
-    public void transRoute(Transaction[] trans, int index, boolean isFirstCycleDay, int strikeOrderIndex){
-        Transaction t = trans[index];
+    public void transRoute(Transaction t, boolean isFirstCycle, int strikeOrderIndex, Date today){
         TransCode TC = t.getTC();
-        if(TC.getDirection().equals('R'))  repayment(t, strikeOrderIndex);
-        else if((TC.equals(TransCode.TC3000) && !isFirstCycleDay) //非首月才读取取现交易
-                || (!TC.equals(TransCode.TC3000) && TC.getDirection().equals('D'))){
-            debitTrans(t);
+        if(TC.getDirection().equals('R'))  repayment(t, strikeOrderIndex, today);
+//        else if((TC.equals(TransCode.TC3000) && !isFirstCycleDay) //非首月才读取取现交易
+//                || (!TC.equals(TransCode.TC3000) && TC.getDirection().equals('D'))){
+//            debitTrans(t);
+//        }
+        else if(TC.getDirection().equals('D')){
+            debitTrans(t, isFirstCycle);
         }
         else if(TC.getDirection().equals('C')){
-            creditTrans(t,strikeOrderIndex);
+            creditTrans(t,strikeOrderIndex, today);
+        }
+        else if(TC.getDirection().equals('I')){
+            processInterest(t, today);
         }
         // 可能有未收录的交易，则不处理
     }
@@ -160,7 +176,7 @@ public class TransProcess {
      * Todo 都按仅有一种利率余额处理，这里贷方和还款都按利率由高到低冲抵
      *
      */
-    private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr, int billout) {
+    private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr, int billout, Date today) {
         if (amount <= 0)    return 0.0;
         double oriAmount = amount;   //备份原金额
         for (BalanceList BL : BP_field) {
@@ -176,7 +192,7 @@ public class TransProcess {
                 if (!node.getBL().getBP().isWaive()) {      //判断waive标识
                     //计算利息
                     double intrests = node.getAmount() * BL.getRate()
-                            * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate()));
+                            * (DateCompute.getIntervalDays(node.getStartDate(), node.getEndDate())+1);
                     node.setIntrests(intrests);
                     // 判断该利息的累计值应该放在PROV还是ACCR
                     if(node.isFreeInt() && node.getBillout()==0){
@@ -198,7 +214,8 @@ public class TransProcess {
                      */
                     BalanceNode leftNode = new BalanceNode(BL, node.getAmount() - amount,
                             tr.getRecordDate(),
-                            tr.getRecordDate(),
+                            today,
+                            today,
                             node.isFreeInt(),
                             node.getSummary(),
                             node.getBillout());
@@ -237,12 +254,13 @@ public class TransProcess {
                         -tracebackAmount,
                         tr.getTransDate(),
                         tr.getRecordDate(),
+                        tr.getRecordDate(),
                         false,
                         tr.getSummary() + "(回算)",
                         billout);
                 tracebackNode.setExist(false);  //该node一出生就是死的
                 double intrests = tracebackNode.getAmount() * BL.getRate()
-                        * (DateCompute.getIntervalDays(tracebackNode.getStartDate(), tracebackNode.getEndDate()));
+                        * (DateCompute.getIntervalDays(tracebackNode.getStartDate(), tracebackNode.getEndDate())+1);
                 if(billout==1){
                     if (BL.getACCR() + intrests > 0) {
                         tracebackNode.setIntrests(intrests);

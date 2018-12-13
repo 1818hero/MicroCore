@@ -1,8 +1,8 @@
 package Model;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import Utils.DateCompute;
+
+import java.util.*;
 
 /**
  * Created by Victor on 2018/9/19.
@@ -25,13 +25,45 @@ public class Account {
     int cycleDay;               //账单日（每月几号）
     int lastPaymentDay;         //最后还款日（每月几号）
     int graceDay;               //宽限日（每月几号）
-    Date startDate;             //账户初始日期
-    Date today;                 //当前日期
+    Date initDate;              //账户初始日期
     int late = 1;               //延滞标识
     double accRate;             //账户当日利率
     double limit;               //账户额度
-    double avLimit;             //可用额度
+    double spent;               //已用额度
     double lateDayDueAmount;    //宽限日前未还清金额
+
+    /**
+     * 记录s-1期到e期的系统利息计算结果
+     */
+    Map<Date, Double> answer;
+    Queue<Double> due;          //due值
+    double minPayment;          //最低还款额
+
+    public Map<Date, Double> getAnswer() {
+        return answer;
+    }
+
+    public void setAnswer(Map<Date, Double> answer) {
+        this.answer = answer;
+    }
+
+    public Queue<Double> getDue() {
+        return due;
+    }
+
+    public void setDue(Queue<Double> due) {
+        this.due = due;
+    }
+
+    public double getMinPayment() {
+        return minPayment;
+    }
+
+    public void setMinPayment(double minPayment) {
+        this.minPayment = minPayment;
+    }
+
+
 
 
     public List<BalanceProgram> getBP() {
@@ -50,20 +82,12 @@ public class Account {
         this.cycleDay = cycleDay;
     }
 
-    public Date getStartDate() {
-        return startDate;
+    public Date getInitDate() {
+        return initDate;
     }
 
-    public void setStartDate(Date startDate) {
-        this.startDate = startDate;
-    }
-
-    public Date getToday() {
-        return today;
-    }
-
-    public void setToday(Date today) {
-        this.today = today;
+    public void setInitDate(Date initDate) {
+        this.initDate = initDate;
     }
 
     public double getOverflow() {
@@ -90,12 +114,12 @@ public class Account {
         this.limit = limit;
     }
 
-    public double getAvLimit() {
-        return avLimit;
+    public double getSpent() {
+        return spent;
     }
 
-    public void setAvLimit(double avLimit) {
-        this.avLimit = avLimit;
+    public void setSpent(double spent) {
+        this.spent = spent;
     }
 
     public int getGraceDay() {
@@ -130,12 +154,11 @@ public class Account {
         this.lateDayDueAmount = lateDayDueAmount;
     }
 
-    public Account(int cycleDay, Date startDate, Date today, double limit){
-        this.startDate = startDate;
+    public Account(int cycleDay, Date initDate, double limit, String startCycle, String endCycle){
+        this.initDate = initDate;
         this.cycleDay = cycleDay;
-        this.today = today;
         this.limit = limit;
-        this.avLimit = limit;
+        this.spent = limit;
         BalanceProgram RTL1 = new BalanceProgram(this);
         BP.add(RTL1);   //位置0
         BalanceProgram CSH1 = new BalanceProgram(this);
@@ -144,5 +167,15 @@ public class Account {
         BP.add(INSTL);  //位置2
         BalanceProgram FEE = new BalanceProgram(this);
         BP.add(FEE);    //位置3
+
+        answer = new HashMap<>();
+        Date start = DateCompute.dateForm(startCycle+"-"+String.valueOf(cycleDay));
+        //Todo 跟进输入账期范围初始化answer
+        Date end = DateCompute.dateForm(endCycle+"-"+String.valueOf(cycleDay));
+        Date curDate = start;
+        while(!curDate.equals(end)){
+            answer.put(curDate, -1.0);
+            curDate = DateCompute.addMonth(curDate, 1);
+        }
     }
 }
