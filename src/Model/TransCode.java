@@ -4,15 +4,15 @@ package Model;
  * Created by Victor on 2018/9/19.
  */
 public enum TransCode {
-    TC4000(0,1,"D", true, false),
-    TC4100(0,-1,"C", false, true),
-    TC4001(2,1,"D", true, false),
-    TC4101(2,-1,"C", true, false),
-    TC4002(2,1,"D", true, false),
-    TC4102(2,-1,"C", true, false),
-    TC4003(2,1,"D", true, false),
-    TC4103(2,-1,"C", true, false),
-    TC3000(1,1,"D", false, true),
+    TC4000(0,0,"D", true, false),
+    TC4100(0,0,"C", false, true),
+    TC4001(2,0,"D", true, false),
+    TC4101(2,0,"C", true, false),
+    TC4002(2,0,"D", true, false),
+    TC4102(2,0,"C", true, false),
+    TC4003(2,0,"D", true, false),
+    TC4103(2,0,"C", true, false),
+    TC3000(1,0,"D", false, true),
     TC3100(1,0,"C", false, true),
     TC2000(-1,-1,"R", false, true),
     TC9698(-1,-1,"I",false,false);
@@ -26,10 +26,8 @@ public enum TransCode {
     private int BP;
     /**
      * 栏位序号：
-     * 0：BNP
-     * 1：CTD
-     * 2：FEE BNP
-     * 3：FEE CTD
+     * 0：本金
+     * 1：FEE
      */
     private int field;   //栏位对应的序号
     private String direction;   //交易方向（D：借方；C：贷方；R:还款）

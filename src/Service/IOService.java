@@ -78,13 +78,17 @@ public class IOService {
      * @param config
      * @return
      */
-    public List<Integer> processConfig(String config){
-        String[] tmp = config.split("\n");
-        List<Integer> res = new ArrayList<>();
+    public List<List<Integer>> processConfig(String config){
+        String[] tmp = config.split("===\n");
+        List<List<Integer>> res = new ArrayList<>();
         for(String s : tmp){
+            List<Integer> position = new ArrayList<>();
+            s = s.replace("\n"," ");
             String[] tmp2 = s.split(" ");
-            res.add(new Integer(tmp2[0]));
-            res.add(new Integer(tmp2[1]));
+            for(String pos : tmp2){
+                position.add(new Integer(pos));
+            }
+            res.add(position);
         }
         return res;
     }

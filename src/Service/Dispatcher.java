@@ -33,8 +33,7 @@ public class Dispatcher {
 
 
     boolean isFirstCycleDay = true; //是否为计算利息的首个账期
-    int freeIntInterval = 18;   //免息期
-    int graceDayInterval = 3;   //宽限期
+
 
     /**
      * 起始日期:
@@ -59,7 +58,7 @@ public class Dispatcher {
                     DateCompute.getIntervalDays(transList[transIndex].getRecordDate(), today) == 0){
                 if(transList[transIndex].getRecordDate().equals(today)){
                     //根据账户延滞状态判断采用哪套冲账顺序
-                    TP.transRoute(transList[transIndex], isFirstCycleDay, strikeOrderDispatcher.get(account.getLate()),today);
+                    TP.transRoute(transList[transIndex], isFirstCycleDay ,today);
                 }
                 transIndex += 1;
             }
@@ -85,6 +84,18 @@ public class Dispatcher {
 
     }
 
+
+    public Dispatcher(Account account,Transaction[] transList, String startCycle, String endCycle,
+                        DayProcess DP, TransProcess TP) {
+        this.account = account;
+        this.transList = transList;
+        this.startDate = DateCompute.addMonth(
+                        DateCompute.dateForm(startCycle+"-"+(account.getCycleDay()+1)),-1);
+        this.endDate = DateCompute.dateForm(endCycle+"-"+account.getCycleDay());
+        this.DP = DP;
+        this.TP = TP;
+
+    }
 
 
 }

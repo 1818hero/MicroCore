@@ -10,11 +10,11 @@ import java.util.PriorityQueue;
  * Created by Victor on 2018/10/21.
  */
 public class BalanceProgram {
-    Account account;        //该BP所属账户
-    String assetAttr = "";  //资产属性
-    String productAttr = "";//业务属性
-    boolean waive = false;   //生息标识,若为true则该BP下的所有余额不生息
-    boolean freeInt = false; //免息标识，若为true则表示该BP下的Node享受免息期
+    Account account;         //该BP所属账户
+    String assetAttr = "";   //资产属性
+    String productAttr = ""; //业务属性
+    int waive = 0;           //生息标识,若为1则该BP下的所有余额不生息，若为2则免收当期利息
+    boolean freeInt;         //该BP的余额是否包含免息期
     /**
      * 账户余额List分两个栏位
      * 0: Balance
@@ -26,9 +26,9 @@ public class BalanceProgram {
     public BalanceProgram(Account account) {
         this.account = account;
         balance = new ArrayList<List<BalanceList>>();
-        for(int i=0; i<2; i++){
+        for (int i = 0; i < 2; i++) {
             ArrayList<BalanceList> tmp = new ArrayList<>();
-            tmp.add(new BalanceList(this,0.0005));
+            tmp.add(new BalanceList(this, 0.0005)); //默认创建一个万5利率的BalanceList
             balance.add(tmp);
         }
     }
@@ -57,11 +57,11 @@ public class BalanceProgram {
         this.account = account;
     }
 
-    public boolean isWaive() {
+    public int getWaive() {
         return waive;
     }
 
-    public void setWaive(boolean waive) {
+    public void setWaive(int waive) {
         this.waive = waive;
     }
 

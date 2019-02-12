@@ -11,9 +11,12 @@ import java.util.Date;
  * 日期相关的工具类
  * Created by Victor on 2018/10/29.
  */
-public class DateCompute {
+public class DateCompute {  //Todo 什么情况下class可以用private修饰
     private static Calendar cal = Calendar.getInstance();
 
+    /**
+     * 获取两个日期之间的间隔天数
+     */
     public static int getIntervalDays(Date startDate, Date endDate) {
 
         if (null == startDate || null == endDate) {
@@ -43,6 +46,16 @@ public class DateCompute {
             e.getErrorOffset();
         }
         return null;
+    }
+    /**
+     * 输入Date，按xxxx-xx-xx形式输出时间
+     * @param d
+     * @return
+     */
+    public static String reDateForm(Date d){
+        //String[] str = d.toString()
+        // Todo 搞清楚toInstant()的用法
+        return DateCompute.addDate(d,1).toInstant().toString().substring(0,10);
     }
 
     /**
@@ -75,7 +88,7 @@ public class DateCompute {
      */
     public static int getMonth(Date date){
         cal.setTime(date);
-        return cal.get(Calendar.MONTH);
+        return cal.get(Calendar.MONTH)+1;
     }
 
     /**
@@ -123,7 +136,7 @@ public class DateCompute {
     public static int judgeCycle(int cycleDay, Date transDate, Date recordDate){
         if(DateCompute.getIntervalDays(transDate, recordDate) < 0)  return -1;
         Date lastCycleDay = DateCompute.getDate(DateCompute.getYear(recordDate),DateCompute.getMonth(recordDate),cycleDay);
-        if(DateCompute.getIntervalDays(lastCycleDay, recordDate) < 0){
+        if(DateCompute.getIntervalDays(lastCycleDay, recordDate) <= 0){
             lastCycleDay = DateCompute.addMonth(lastCycleDay, -1);
         }
         if(DateCompute.getIntervalDays(lastCycleDay, transDate) > 0 )   return 0;

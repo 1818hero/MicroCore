@@ -17,7 +17,7 @@ public class DayProcess {
 
     Account account;
     IOService out;
-    Date curCycle;
+    Date curCycle;      //本账期的账单日
 
     /**
      * 账单日逻辑
@@ -39,31 +39,34 @@ public class DayProcess {
      * - Exist为true表示，该Node的余额未被冲抵。
      * - Node存在表示，该余额产生的利息还未出账。
      *
-     *
      */
 
 
     public void cycleDayProcess(boolean isFirstCycleDay, Date today){
         double IBNP = 0.0;                      //本月总出账利息
         double BNP = 0.0;                       //本月总出帐本金
+        curCycle = today;                       //初始化今天为当前cycle
+        Date tomorrow = DateCompute.addDate(today, 1);
+        String billCycle = DateCompute.getYear(today)+"年"+DateCompute.getMonth(today)+"月账期";
         for (BalanceProgram BP : account.getBP()){
+            double ints = 0.0;              //记录该BP的出账利息
             for(List<BalanceList> field : BP.getBalance()){
                 BalanceList BL = field.get(0);  //Todo 利率余额写死
                 BL.setBNP(BL.getBNP()+BL.getCTD());
+                BL.setCTD(0.0);
                 BNP += BL.getBNP();
                 double lastBalance = 0.0;       //记录进入下一账期的余额
-                double ints = 0.0;              //记录该BP的出账利息
                 ListIterator<BalanceNode> li = BL.getBL().listIterator();
                 while(li.hasNext()){
                     BalanceNode curNode = li.next();
-                    int period = DateCompute.judgeCycle(account.getCycleDay(), curNode.getRecordDate(), today);
-                    /**
-                     * 1. 清理两周期前的交易
-                     */
-                    if(period >= 2){
-                        li.remove();
-                        continue;
-                    }
+//                    int period = DateCompute.judgeCycle(account.getCycleDay(), curNode.getRecordDate(), today);
+//                    /**
+//                     * 1. 清理两周期前的交易
+//                     */
+//                    if(period >= 2){
+//                        li.remove();
+//                        continue;
+//                    }
                     /**
                      * 2. 结息并统计进入下个账期的余额
                      */
@@ -73,7 +76,6 @@ public class DayProcess {
                         double intrests = curNode.getAmount() * BL.getRate()
                                 * (DateCompute.getIntervalDays(curNode.getStartDate(), curNode.getEndDate())+1);
                         curNode.setIntrests(intrests);
-
                         curNode.setExist(false);
                     }
 
@@ -81,59 +83,79 @@ public class DayProcess {
                      * 3. 出利息
                      */
                     if(!curNode.isFreeInt()){
-                        if(!(isFirstCycleDay || BL.getBP().isWaive())) {
+                        if(!(isFirstCycleDay || BL.getBP().getWaive()!=0)) {
                             //输出该Node的计息信息
-                            System.out.println(curNode.getAmount()+"  "+curNode.getStartDate()+"  "+curNode.getEndDate()
-                            +"  "+curNode.getIntrests()+"  "+curNode.getSummary());
-                            ints += curNode.getIntrests();
+                            //Todo 格式化输出
+                            if(DateCompute.getIntervalDays(curNode.getStartDate(),curNode.getEndDate())>=0) {
+                                System.out.println(String.format("%.2f",curNode.getAmount()) + "  " + DateCompute.reDateForm(curNode.getStartDate())
+                                        + "  " + DateCompute.reDateForm(curNode.getEndDate())
+                                        + "  " + String.format("%.2f",curNode.getIntrests()) + "  " + curNode.getSummary());
+                                ints += curNode.getIntrests();
+                            }
                         }
                         li.remove();
                         continue;
                     }
                 }
 
+
                 // 新建上期余额节点
-                Date tomorrow = DateCompute.addDate(today, 1);
                 if(lastBalance>0) {
                     BL.getBL().addLast(new BalanceNode(BL,
                             lastBalance,
                             tomorrow,
                             tomorrow,
                             tomorrow,
-                            false,
+                            BP.isFreeInt(),
                             "上期余额(" + BL.getBP().getProductAttr() + ")",
                             1));
                 }
-                //新建利息余额节点，并将该栏位利息累加到IBNP
-                if(ints > 0 && !isFirstCycleDay) {
-                    IBNP += ints;
-                    BalanceList intBL = BL.getBP().getBalance().get(1).get(0);  //Todo 利率余额写死
-                    intBL.getBL().addLast(new BalanceNode(intBL,
-                            ints,
-                            tomorrow,
-                            tomorrow,
-                            tomorrow,
-                            false,
-                            "上期利息余额(" + BL.getBP().getProductAttr() + ")",
-                            1));
-                }
-
+                /**
+                 * 4. 重置pointer
+                 */
+                BL.setPointer(BL.getBL().size());
                 //Todo 统计最低还款额
 
             }
-            if(!isFirstCycleDay){
-                if(account.getAnswer().get(curCycle) < 0||(IBNP-account.getAnswer().get(curCycle) < 0.03 && IBNP-account.getAnswer().get(curCycle)>0)){
-                    //Todo 输出IBNP
-                    account.setLateDayDueAmount(IBNP + BNP);
-                    System.out.println("本期利息是："+IBNP);
-
+            /**
+             * 新建利息余额节点,如果出利息时有溢缴款，则先用溢缴款冲抵
+             */
+            if(ints > 0 && !isFirstCycleDay) {
+                IBNP += ints;       //先出利息，再处理溢缴款
+                if(account.getOverflow() >= ints){
+                    account.setOverflow(account.getOverflow()-ints);
+                    ints = 0.0;
                 }
                 else{
-                    //Todo 打印错误信息
-
+                    ints -= account.getOverflow();
+                    account.setOverflow(0.0);
                 }
+
+                BalanceList intBL = BP.getBalance().get(1).get(0);  //Todo 利率余额写死
+                intBL.getBL().addLast(new BalanceNode(intBL,
+                        ints,
+                        tomorrow,
+                        tomorrow,
+                        tomorrow,
+                        false,
+                        billCycle+"利息余额(" + BP.getProductAttr() + ")",
+                        1));
+                intBL.setBNP(ints+intBL.getBNP());
             }
 
+        }
+        if(!isFirstCycleDay){
+            //暂时不要结果对比功能
+            // if(account.getAnswer().get(curCycle) < 0||(IBNP-account.getAnswer().get(curCycle) < 0.03 && IBNP-account.getAnswer().get(curCycle)>0)){
+            //Todo 输出IBNP
+            account.setBNP(IBNP + BNP);
+            System.out.println(billCycle+"的利息是："+String.format("%.2f", IBNP));
+
+            //}
+//                else{
+//                    //Todo 打印错误信息
+//
+//                }
         }
     }
     /**
@@ -145,19 +167,19 @@ public class DayProcess {
     /**
      * 宽限日逻辑
      * 1. 判断lateDayDueAmt是否小于10元
-     * 若是，则清除每个栏位freeInt为true且Billout为true的Node；
-     * 若否，则仅将所有freeInt为true的Node置为false；
+     * 若是，则清除每个栏位freeInt为true且已出帐的Node；
+     * 若否，则仅将所有freeInt为true且已出帐的Node置为false；
      *
      */
     public void graceDayProcess(){
-        for (BalanceProgram BP : account.getBP()) { // Todo 每次都要写循环，可尝试使用AOP简化
+        for (BalanceProgram BP : account.getBP()) {
             for (List<BalanceList> field : BP.getBalance()) {
                 BalanceList BL = field.get(0);      // Todo 利率余额写死
                 ListIterator<BalanceNode> li = BL.getBL().listIterator();
                 int count= 0;
                 while (li.hasNext() && count < BL.getPointer()) {
                     BalanceNode curNode = li.next();
-                    if(account.getLateDayDueAmount() <= 10) {
+                    if(account.getBNP() <= 10) {
                         if (curNode.isFreeInt()){
                             li.remove();
                         }
@@ -170,5 +192,9 @@ public class DayProcess {
             }
         }
 
+    }
+
+    public DayProcess(Account account) {
+        this.account = account;
     }
 }

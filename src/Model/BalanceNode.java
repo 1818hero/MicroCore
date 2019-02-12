@@ -13,6 +13,7 @@ public class BalanceNode {
     Date startDate; //起息日
     Date endDate;   //止息日
     String summary; //摘要
+    String anoSummary; //补充摘要
     int billout;    //是否已出账，0表示未出，1表示已出
     /**
      * freeInt：是否处在免息期
@@ -34,6 +35,7 @@ public class BalanceNode {
      * 方案2（交易管理）：BalanceNode的Intrests做一个Map<Date, Double>,出账时更新Map以及起息日和止息日
      */
     boolean exist;
+
 
     public boolean isExist() {
         return exist;

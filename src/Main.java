@@ -1,4 +1,10 @@
+import Model.Account;
 import Model.TransCode;
+import Model.Transaction;
+import Service.DayProcess;
+import Service.Dispatcher;
+import Service.IOService;
+import Service.TransProcess;
 import Utils.DateCompute;
 
 import java.util.*;
@@ -17,33 +23,40 @@ import java.util.regex.Pattern;
  */
 public class Main {
     public static void main(String[] args) {
-//        IOService in = new IOService();
-//        List<Integer> strikeOrder = null;
-//        Transaction[] trList = null;
-//        try {
-//            trList = in.processTrans(in.fileRead("trades.txt"));
-//            strikeOrder = in.processConfig(in.fileRead("config.txt"));
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
-//       // System.out.println(System.getProperty("user.dir")+"\\trades.txt");
-//        int cycleDay = 5;       //账单日
-//        Date startDate = DateCompute.dateForm("2018-05-06"); //账户初始日期
-//        Date today = DateCompute.dateForm("2018-10-06");     //今天
-//        Account account = new Account(cycleDay, startDate, today, 10000);
-//        TransProcess TRservice = new TransProcess(account, strikeOrder);    //加载账户和冲账顺序
-//        //TRservice.transRoute(trList);
-//        System.out.println("读取完成");
-        Date date = DateCompute.dateForm("2018-12-31");
-        System.out.println(TransCode.TC3100.toString().substring(2));
-        System.out.println(Pattern.matches("\\d1..",TransCode.TC3100.toString().substring(2)));
-        System.out.println(DateCompute.addDate(date,-2));
-        List<StringBuilder> list = new ArrayList<>();
-        StringBuilder sb1 = new StringBuilder("abc");
-        StringBuilder sb2 = new StringBuilder("def");
-        list.add(sb1);
-        list.add(sb2);
-        sb1.append("z");
-        System.out.println(list.get(0));
+        IOService in = new IOService();
+        List<List<Integer>> strikeOrder = null;
+        Transaction[] trList = null;
+        try {
+            trList = in.processTrans(in.fileRead("trades.txt"));
+            strikeOrder = in.processConfig(in.fileRead("config.txt"));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+       // System.out.println(System.getProperty("user.dir")+"\\trades.txt");
+        int cycleDay = 5;       //账单日
+        Date startDate = DateCompute.dateForm("2018-05-06"); //账户初始日期
+        String startCycle = "2018-05";
+        String endCycle = "2018-12";
+        Map<Integer, Integer> strikeOrderDispatcher = new HashMap<>();
+        //初始化延滞阶段对应的冲账顺序
+        for(int i=0; i<4; i++){
+            strikeOrderDispatcher.put(i,0); //90天以内
+        }
+        for(int i=4; i<=20; i++){
+            strikeOrderDispatcher.put(i,1); //90天以上
+        }
+
+
+
+        Date today = DateCompute.dateForm("2018-10-06");     //今天
+
+        //Todo 将下述代码配置文件化
+        Account account = new Account(cycleDay, startDate, 100000.0);
+        TransProcess TP = new TransProcess(account, strikeOrder, strikeOrderDispatcher);    //加载账户和冲账顺序
+        DayProcess DP = new DayProcess(account);
+        Dispatcher mainThread = new Dispatcher(account, trList, startCycle, endCycle, DP, TP);
+        mainThread.dispatcher();
+        System.out.println("完成");
+
     }
 }

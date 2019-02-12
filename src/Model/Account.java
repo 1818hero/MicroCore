@@ -1,7 +1,5 @@
 package Model;
 
-import Utils.DateCompute;
-
 import java.util.*;
 
 /**
@@ -21,16 +19,20 @@ import java.util.*;
  */
 public class Account {
     List<BalanceProgram> BP = new ArrayList<>();   //账户余额
-    double overflow=0;          //溢缴款
+    double overflow;          //溢缴款
     int cycleDay;               //账单日（每月几号）
     int lastPaymentDay;         //最后还款日（每月几号）
     int graceDay;               //宽限日（每月几号）
+    //static final List<Integer> cycle2graceDay = new ArrayList<Integer>(){};  //Todo 构造方法后面接{}是什么意思
     Date initDate;              //账户初始日期
-    int late = 1;               //延滞标识
-    double accRate;             //账户当日利率
+    int late;                   //延滞标识(与会计核算码一致)
+    static double accRate = 0.0005;    //账户当日利率
+    //static final int freeIntInterval = 18;   //免息期间隔
+    //static final int graceDayInterval = 3;   //宽限期间隔
     double limit;               //账户额度
     double spent;               //已用额度
-    double lateDayDueAmount;    //宽限日前未还清金额
+    double BNP;                 //宽限日未还清账单金额
+    double lateDayDueAmt;       //宽限日未还最低金额（用于计算违约金）
 
     /**
      * 记录s-1期到e期的系统利息计算结果
@@ -146,36 +148,50 @@ public class Account {
         this.accRate = accRate;
     }
 
-    public double getLateDayDueAmount() {
-        return lateDayDueAmount;
+    public double getBNP() {
+        return BNP;
     }
 
-    public void setLateDayDueAmount(double lateDayDueAmount) {
-        this.lateDayDueAmount = lateDayDueAmount;
+    public void setBNP(double BNP) {
+        this.BNP = BNP;
     }
 
-    public Account(int cycleDay, Date initDate, double limit, String startCycle, String endCycle){
+    public Account(int cycleDay, Date initDate, double limit){
         this.initDate = initDate;
         this.cycleDay = cycleDay;
         this.limit = limit;
         this.spent = limit;
         BalanceProgram RTL1 = new BalanceProgram(this);
+        RTL1.setProductAttr("消费");
+        RTL1.setFreeInt(true);
         BP.add(RTL1);   //位置0
         BalanceProgram CSH1 = new BalanceProgram(this);
+        CSH1.setProductAttr("取现");
+        CSH1.setFreeInt(false);
         BP.add(CSH1);   //位置1
         BalanceProgram INSTL = new BalanceProgram(this);
+        INSTL.setProductAttr("分期");
+        INSTL.setFreeInt(true);
         BP.add(INSTL);  //位置2
         BalanceProgram FEE = new BalanceProgram(this);
+        FEE.setProductAttr("费用");
+        FEE.setFreeInt(false);
         BP.add(FEE);    //位置3
-
         answer = new HashMap<>();
-        Date start = DateCompute.dateForm(startCycle+"-"+String.valueOf(cycleDay));
-        //Todo 跟进输入账期范围初始化answer
-        Date end = DateCompute.dateForm(endCycle+"-"+String.valueOf(cycleDay));
-        Date curDate = start;
-        while(!curDate.equals(end)){
-            answer.put(curDate, -1.0);
-            curDate = DateCompute.addMonth(curDate, 1);
-        }
+        BalanceProgram MEM = new BalanceProgram(this);
+        MEM.setProductAttr("年费");
+        MEM.setFreeInt(false);
+        BP.add(MEM);    //位置4
+        answer = new HashMap<>();
+//        Date start = DateCompute.dateForm(startCycle+"-"+String.valueOf(cycleDay));
+//        //Todo 跟进输入账期范围初始化answer
+//        Date end = DateCompute.dateForm(endCycle+"-"+String.valueOf(cycleDay));
+//        Date curDate = start;
+//        while(!curDate.equals(end)){
+//            answer.put(curDate, -1.0);
+//            curDate = DateCompute.addMonth(curDate, 1);
+//        }
+        //Todo 测试用
+        this.graceDay = 23;
     }
 }
