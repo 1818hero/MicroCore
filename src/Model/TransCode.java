@@ -14,7 +14,16 @@ public enum TransCode {
     TC4103(2,0,"C", true, false),
     TC3000(1,0,"D", false, true),
     TC3100(1,0,"C", false, true),
-    TC2000(-1,-1,"R", false, true),
+    TC2000(-1,-1,"R", false, false),
+    TC4306(0,0,"C", false, false),
+    TC5802(3,1,"D",false,false),
+    TC5803(3,1,"D",false,false),
+    TC5808(3,1,"D",false,false),
+    TC5805(2,1,"D",false,false),
+    TC5806(2,1,"D",false,false),
+    TC5809(2,1,"D",false,false),
+    TC6011(4,1,"D",false,false),
+    TC6013(3,1,"D",false,false),
     TC9698(-1,-1,"I",false,false);
     /**
      * BP对应的序号:
@@ -22,6 +31,7 @@ public enum TransCode {
      * 1: CSH1
      * 2: INSTL
      * 3: FEE
+     * 4: 年费
      */
     private int BP;
     /**

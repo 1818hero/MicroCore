@@ -28,7 +28,7 @@ public class BalanceProgram {
         balance = new ArrayList<List<BalanceList>>();
         for (int i = 0; i < 2; i++) {
             ArrayList<BalanceList> tmp = new ArrayList<>();
-            tmp.add(new BalanceList(this, 0.0005)); //默认创建一个万5利率的BalanceList
+            tmp.add(new BalanceList(this, 0.0005, i)); //默认创建一个万5利率的BalanceList
             balance.add(tmp);
         }
     }

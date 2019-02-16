@@ -117,6 +117,14 @@ public class BalanceNode {
         this.recordDate = recordDate;
     }
 
+    public String getAnoSummary() {
+        return anoSummary;
+    }
+
+    public void setAnoSummary(String anoSummary) {
+        this.anoSummary = anoSummary;
+    }
+
     public BalanceNode(BalanceList BL, double amount, Date recordDate, Date startDate, Date endDate, boolean freeInt, String summary, int billout) {
         this.BL = BL;
         this.amount = amount;
@@ -128,5 +136,6 @@ public class BalanceNode {
         this.exist = true;
         this.summary = summary;
         this.billout = billout;
+        this.anoSummary = "";
     }
 }

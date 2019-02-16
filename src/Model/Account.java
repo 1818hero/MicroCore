@@ -176,11 +176,13 @@ public class Account {
         BalanceProgram FEE = new BalanceProgram(this);
         FEE.setProductAttr("费用");
         FEE.setFreeInt(false);
+        FEE.setWaive(1);
         BP.add(FEE);    //位置3
         answer = new HashMap<>();
         BalanceProgram MEM = new BalanceProgram(this);
         MEM.setProductAttr("年费");
         MEM.setFreeInt(false);
+        MEM.setWaive(1);
         BP.add(MEM);    //位置4
         answer = new HashMap<>();
 //        Date start = DateCompute.dateForm(startCycle+"-"+String.valueOf(cycleDay));

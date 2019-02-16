@@ -47,7 +47,7 @@ public class DayProcess {
         double BNP = 0.0;                       //本月总出帐本金
         curCycle = today;                       //初始化今天为当前cycle
         Date tomorrow = DateCompute.addDate(today, 1);
-        String billCycle = DateCompute.getYear(today)+"年"+DateCompute.getMonth(today)+"月账期";
+        String billCycle = DateCompute.getYear(today)+"年"+DateCompute.getMonth(today)+"月";
         for (BalanceProgram BP : account.getBP()){
             double ints = 0.0;              //记录该BP的出账利息
             for(List<BalanceList> field : BP.getBalance()){
@@ -89,25 +89,27 @@ public class DayProcess {
                             if(DateCompute.getIntervalDays(curNode.getStartDate(),curNode.getEndDate())>=0) {
                                 System.out.println(String.format("%.2f",curNode.getAmount()) + "  " + DateCompute.reDateForm(curNode.getStartDate())
                                         + "  " + DateCompute.reDateForm(curNode.getEndDate())
-                                        + "  " + String.format("%.2f",curNode.getIntrests()) + "  " + curNode.getSummary());
+                                        + "  " + String.format("%.2f",curNode.getIntrests()) + "  " + curNode.getSummary()+curNode.getAnoSummary());
                                 ints += curNode.getIntrests();
                             }
                         }
                         li.remove();
                         continue;
                     }
+
+                    curNode.setBillout(1);
+
                 }
-
-
                 // 新建上期余额节点
                 if(lastBalance>0) {
+                    String summary = "上期" + BL.getBP().getProductAttr() + "余额";
                     BL.getBL().addLast(new BalanceNode(BL,
                             lastBalance,
                             tomorrow,
                             tomorrow,
                             tomorrow,
                             BP.isFreeInt(),
-                            "上期余额(" + BL.getBP().getProductAttr() + ")",
+                            summary,
                             1));
                 }
                 /**
@@ -132,15 +134,24 @@ public class DayProcess {
                 }
 
                 BalanceList intBL = BP.getBalance().get(1).get(0);  //Todo 利率余额写死
-                intBL.getBL().addLast(new BalanceNode(intBL,
-                        ints,
-                        tomorrow,
-                        tomorrow,
-                        tomorrow,
-                        false,
-                        billCycle+"利息余额(" + BP.getProductAttr() + ")",
-                        1));
+                BalanceNode intNode;
+                if (intBL.getBL().size()>0) {
+                    intNode = intBL.getBL().getLast();
+                    intNode.setAmount(intNode.getAmount()+ints);
+                    intNode.setSummary(BP.getProductAttr() + "利息余额");
+                }
+                else {
+                    intBL.getBL().addLast(new BalanceNode(intBL,
+                            ints,
+                            tomorrow,
+                            tomorrow,
+                            tomorrow,
+                            false,
+                            BP.getProductAttr() + "利息余额",
+                            1));
+                }
                 intBL.setBNP(ints+intBL.getBNP());
+                intBL.setPointer(intBL.getBL().size());
             }
 
         }

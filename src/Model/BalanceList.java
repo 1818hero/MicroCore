@@ -12,10 +12,11 @@ public class BalanceList {
     LinkedList<BalanceNode> BL;
     int pointer;                    //标识未出余额从第几个Node开始
     double rate;                    //该BalanceList的利率参数片
-    double PROV;                    //该BalanceList的PROV栏位
-    double ACCR;                    //该BalanceList累积的未出利息
+    double PROV;                    //该BalanceList的PROV栏位（暂未使用）
+    double ACCR;                    //该BalanceList累积的未出利息（暂未使用）
     double CTD;                     //该BalanceList的未出总金额
     double BNP;                     //该BalanceList的已出总金额
+    int type;                       //该BalanceList的类别（0：本金 1：利息 2：费用）
 
     public LinkedList<BalanceNode> getBL() {
         return BL;
@@ -81,7 +82,16 @@ public class BalanceList {
         this.pointer = pointer;
     }
 
-    public BalanceList(BalanceProgram BP, double rate){
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
+
+    public BalanceList(BalanceProgram BP, double rate, int type){
         this.BP = BP;
         this.rate = rate;   // 默认BalanceList的利率
         this.BL = new LinkedList<>();
@@ -89,6 +99,7 @@ public class BalanceList {
         this.BNP = 0;
         this.PROV = 0;
         this.ACCR = 0;
+        this.type = type;
         //创建该BalanceList的默认头节点
         //this.BL.add(new BalanceNode(0,BP.getAccount().getToday(),BP.getAccount().getToday(),false,""));
     }
