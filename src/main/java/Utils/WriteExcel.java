@@ -22,27 +22,22 @@ public class WriteExcel {
     private static final String EXCEL_XLSX = "xlsx";
 
     public static void main(String[] args) {
-
-        Map<String, String> dataMap=new HashMap<String, String>();
-        Map<String, String> dataMap2=new HashMap<String, String>();
-        dataMap.put("BankName", "BankName");
-        dataMap.put("Addr", "Addr");
-        dataMap.put("Phone", "Phone");
-        dataMap2.put("BankName", "BankName");
-        dataMap2.put("Addr", "Addr");
-        dataMap2.put("Phone", "Phone");
-        List<Map> list=new ArrayList<Map>();
-        list.add(dataMap);
-        list.add(dataMap2);
-        writeExcel(list, 3, "./writeExcel.xlsx");
-
+        List<List<String>> dataList = new ArrayList<>();
+        List<String> row = new ArrayList<>();
+        List<String> row2 = new ArrayList<>();
+        row.add("2018/1/2");
+        row.add("23.11");
+        row2.add("2018/1/3");
+        row2.add("23.19");
+        row2.add("掌上生活");
+        dataList.add(row);
+        dataList.add(row2);
+        //write2Excel(dataList, "./利息明细.xlsx");
     }
 
-    public static void writeExcel(List<Map> dataList, int cloumnCount,String finalXlsxPath){
+    public static void write2Excel(List<List<String>> dataList, List<Integer> startCol,  String finalXlsxPath){
         OutputStream out = null;
         try {
-            // 获取总列数
-            int columnNumCount = cloumnCount;
             // 读取Excel文档
             File finalXlsxFile = new File(finalXlsxPath);
             Workbook workBook = getWorkbok(finalXlsxFile);
@@ -63,24 +58,17 @@ public class WriteExcel {
             /**
              * 往Excel中写新数据
              */
-            for (int j = 0; j < dataList.size(); j++) {
+            for (int i = 0; i < dataList.size(); i++) {
                 // 创建一行：从第二行开始，跳过属性列
-                Row row = sheet.createRow(j + 1);
+                Row row = sheet.createRow(i + 1);
                 // 得到要插入的每一条记录
-                Map dataMap = dataList.get(j);
-                String name = dataMap.get("BankName").toString();
-                String address = dataMap.get("Addr").toString();
-                String phone = dataMap.get("Phone").toString();
-                for (int k = 0; k <= columnNumCount; k++) {
+                List<String> oneRow = dataList.get(i);
+                int startColumn = 0;
+                if(i < startCol.size()) startColumn = startCol.get(i);
+                for (int j = startColumn; j < startColumn + oneRow.size(); j++) {
                     // 在一行内循环
-                    Cell first = row.createCell(0);
-                    first.setCellValue(name);
-
-                    Cell second = row.createCell(1);
-                    second.setCellValue(address);
-
-                    Cell third = row.createCell(2);
-                    third.setCellValue(phone);
+                    Cell c = row.createCell(j);
+                    c.setCellValue(oneRow.get(j-startColumn));
                 }
             }
             // 创建文件输出流，准备输出电子表格：这个必须有，否则你在sheet上做的任何操作都不会有效
@@ -100,6 +88,7 @@ public class WriteExcel {
         }
         System.out.println("数据导出成功");
     }
+
 
     /**
      * 判断Excel的版本,获取Workbook
