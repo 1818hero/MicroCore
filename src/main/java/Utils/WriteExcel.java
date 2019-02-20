@@ -21,20 +21,6 @@ public class WriteExcel {
     private static final String EXCEL_XLS = "xls";
     private static final String EXCEL_XLSX = "xlsx";
 
-    public static void main(String[] args) {
-        List<List<String>> dataList = new ArrayList<>();
-        List<String> row = new ArrayList<>();
-        List<String> row2 = new ArrayList<>();
-        row.add("2018/1/2");
-        row.add("23.11");
-        row2.add("2018/1/3");
-        row2.add("23.19");
-        row2.add("掌上生活");
-        dataList.add(row);
-        dataList.add(row2);
-        //write2Excel(dataList, "./利息明细.xlsx");
-    }
-
     public static void write2Excel(List<List<String>> dataList, List<Integer> startCol,  String finalXlsxPath){
         OutputStream out = null;
         try {
