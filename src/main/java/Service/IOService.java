@@ -2,7 +2,9 @@ package Service;
 
 import Model.*;
 import Utils.DateCompute;
-import Utils.WriteExcel;
+import Utils.ReadExcel;
+import Utils.ReadWriteExcel;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,7 +18,7 @@ import java.util.*;
  * Created by Victor on 2018/9/15.
  */
 public class IOService {
-
+    private static Logger logger = Logger.getLogger(IOService.class);
     /**
      * 交易文件、参数配置文件读取
      * @return 返回读取字符串
@@ -81,13 +83,33 @@ public class IOService {
             dataList.add(res);
             startCol.add(4);
         }
-        WriteExcel.write2Excel(dataList,startCol,"./利息明细.xlsx");
+        ReadWriteExcel.write2Excel(dataList,startCol,"./利息明细.xlsx");
 
     }
 
-    public String fileRead(String filename) throws Exception {
+    public Transaction[] readTransFromExcel(String xlsPath){
+        ReadExcel obj = new ReadExcel();
+        File file = new File(xlsPath);
+        List excelList = obj.readExcel(file);
+        return processTrans(excelList); //Todo 文件检查、字符检查等等
+    }
+
+    public Transaction[] readTransFromDoc(String path){
+        String content = null;
+        try {
+            content = fileRead(path);
+            return processTrans(content);
+        }catch (Exception e){
+            e.printStackTrace();
+            logger.error("文件读取错误");
+        }
+        return null;
+    }
+
+    private String fileRead(String path) throws Exception {
         //File file = new File(System.getProperty("user.dir")+"\\trades.txt");//定义一个file对象，用来初始化FileReader
-        File file = new File(System.getProperty("user.dir")+"\\"+filename);//定义一个file对象，用来初始化FileReader
+        //File file = new File(System.getProperty("user.dir")+"\\"+filename);//定义一个file对象，用来初始化FileReader
+        File file = new File(path);
         FileReader reader = new FileReader(file);//定义一个fileReader对象，用来初始化BufferedReader
         BufferedReader bReader = new BufferedReader(reader);//new一个BufferedReader对象，将文件内容读取到缓存
         StringBuilder sb = new StringBuilder();//定义一个字符串缓存，将字符串存放缓存中
@@ -108,19 +130,48 @@ public class IOService {
      */
     public Transaction[] processTrans(String transLog){
         String[] trans = transLog.split("\n");
-        Transaction[] res = new Transaction[trans.length];
+        List<List<String>> transList = new ArrayList<>();
+        for(String s : trans){
+            String[] oneTrans = s.split("[\\s,]");
+            List<String> oneTransList = new ArrayList<>();
+            for(String t : oneTrans){
+                oneTransList.add(t);
+            }
+            transList.add(oneTransList);
+        }
+        return processTrans(transList);
+    }
+
+    /**
+     *
+     * @param trans 每一个数组元素代表一条交易的完整信息,且信息已经预处理好
+     * @return
+     */
+    public Transaction[] processTrans(List<List<String>> trans){  //Todo 要全部重写
+        Transaction[] res = new Transaction[trans.size()];
         try {
-            for (int i = 0; i < trans.length; i++) {
+            for (int i = 0; i < trans.size(); i++) {
+                List<String> oneLine = trans.get(i);
+                if(oneLine.size()!=5){
+                    logger.warn("读取交易时输入栏位数目错误，跳过此条交易");
+                    continue;
+                }
                 Transaction tr = new Transaction();
-                String[] trInfo = trans[i].split(",");
-                //String TCStr = "TC" + trInfo[0] ;
-                //TransCode TC = Enum.valueOf(TransCode.class, TCStr);
-                //System.out.println(TC.toString());
-                tr.setTC( Enum.valueOf(TransCode.class, "TC" + trInfo[0]));
-                tr.setTransDate(new SimpleDateFormat("yyyy-MM-dd").parse(trInfo[1]));
-                tr.setRecordDate(new SimpleDateFormat("yyyy-MM-dd").parse(trInfo[2]));
-                tr.setAmount(Double.parseDouble(trInfo[3]));
-                tr.setSummary(trInfo[4]);
+                String TC = oneLine.get(0);
+                if(!TC.matches("^[0-9]{4}$")){
+                    logger.warn("TC栏位读取错误，跳过此条交易");
+                    continue;
+                }
+                tr.setTC( Enum.valueOf(TransCode.class, "TC" + oneLine.get(0)));
+                tr.setTransDate(DateCompute.dateForm(oneLine.get(1)));
+                tr.setRecordDate(DateCompute.dateForm(oneLine.get(2)));
+                String amt = oneLine.get(3);
+                if(!amt.matches("^[0-9]{1,}\\.{0,}[0-9]{0,}]")){
+                    logger.warn("金额栏位读取错误，跳过此条交易");
+                    continue;
+                }
+                tr.setAmount(Double.parseDouble(amt));
+                tr.setSummary(oneLine.get(4));
                 res[i] = tr;
             }
         }catch (Exception e){
@@ -138,12 +189,13 @@ public class IOService {
                     if (o1direct.equals("D") && !o2direct.equals("D"))   return 1;
                     else if (!o1direct.equals("D") && o2direct.equals("D")) return -1;
                     else
-                    return Integer.parseInt(o1.getTC().toString().substring(2))
-                            - Integer.parseInt(o2.getTC().toString().substring(2));
+                        return Integer.parseInt(o1.getTC().toString().substring(2))
+                                - Integer.parseInt(o2.getTC().toString().substring(2));
                 }
             };
         });
         return res;
+
     }
 
     /**

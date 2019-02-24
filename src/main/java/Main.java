@@ -27,8 +27,8 @@ public class Main {
         List<List<Integer>> strikeOrder = null;
         Transaction[] trList = null;
         try {
-            trList = io.processTrans(io.fileRead("trades.txt"));
-            strikeOrder = io.processConfig(io.fileRead("config.txt"));
+            //trList = io.processTrans(io.fileRead("trades.txt"));
+            //strikeOrder = io.processConfig(io.fileRead("config.txt"));
         }catch (Exception e){
             e.printStackTrace();
         }

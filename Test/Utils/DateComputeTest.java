@@ -1,11 +1,13 @@
 package test.Utils; 
 
 import Utils.DateCompute;
+import Utils.ReadWriteExcel;
 import org.junit.Test;
 import org.junit.Before; 
 import org.junit.After;
 
 import java.util.Date;
+import java.util.List;
 
 /** 
 * DateCompute Tester. 
@@ -65,7 +67,9 @@ public void testReDateForm() throws Exception {
 //TODO: Test goes here...
     System.out.println(DateCompute.reDateForm(DateCompute.dateForm("20180901")));
     System.out.println(DateCompute.reDateForm(DateCompute.dateForm("201809")));
-    System.out.println(DateCompute.reDateForm(DateCompute.dateForm("2018/1/22")));
+    System.out.println(DateCompute.reDateForm(DateCompute.dateForm("18/1/22")));
+    List<String[]> res = ReadWriteExcel.readFromExcel("./readExcel.xls");
+    System.out.println(res);
 } 
 
 /** 

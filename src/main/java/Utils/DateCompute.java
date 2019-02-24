@@ -33,6 +33,13 @@ public class DateCompute {  //Todo 什么情况下class可以用private修饰
 
     /**
      * 多种形式输入时间，返回Date
+     * 合法的形式有
+     * 2018-1-2
+     * 2018/1/2
+     * 2018-1
+     * 2018/1
+     * 18/1/2
+     *
      * @param s
      * @return
      */
@@ -51,6 +58,7 @@ public class DateCompute {  //Todo 什么情况下class可以用private修饰
         else type = 2;
         try {
             //return new SimpleDateFormat("yyyy"+splitsym+"MM"+splitsym+"dd").parse(s);
+            if(s.split(splitsym)[0].length()==2)    s = "20"+s;
             if(type==3) return new SimpleDateFormat("yyyy"+splitsym+"MM"+splitsym+"dd").parse(s);
             if(type==2) return new SimpleDateFormat("yyyy"+splitsym+"MM").parse(s);
         }catch (ParseException e){
