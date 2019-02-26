@@ -37,14 +37,15 @@ public class DateCompute {  //Todo 什么情况下class可以用private修饰
      * 2018-1-2
      * 2018/1/2
      * 2018-1
-     * 2018/1
-     * 18/1/2
+     * 1/2018
+     * 1/2/49
      *
      * @param s
      * @return
      */
     @Nullable
     public static Date dateForm(String s){
+        s = s.split(" ")[0];
         String splitsym = "";
         if(s.contains("/")){
             splitsym = "/";
@@ -58,9 +59,26 @@ public class DateCompute {  //Todo 什么情况下class可以用private修饰
         else type = 2;
         try {
             //return new SimpleDateFormat("yyyy"+splitsym+"MM"+splitsym+"dd").parse(s);
-            if(s.split(splitsym)[0].length()==2)    s = "20"+s;
-            if(type==3) return new SimpleDateFormat("yyyy"+splitsym+"MM"+splitsym+"dd").parse(s);
-            if(type==2) return new SimpleDateFormat("yyyy"+splitsym+"MM").parse(s);
+            if(splitsym.equals("/")){
+                String[] dmy = s.split(splitsym);
+                if(type == 3){
+                    if(dmy[2].length()==2){
+                        dmy[2] = "20"+dmy[2];
+                    }
+                    return DateCompute.getDate(Integer.parseInt(dmy[2]),Integer.parseInt(dmy[0]),Integer.parseInt(dmy[1]));
+                }
+                else{
+                    if(dmy[1].length()==2){
+                        dmy[1] = "20"+dmy[1];
+                    }
+                    return DateCompute.getDate(Integer.parseInt(dmy[1]),Integer.parseInt(dmy[0]),1);
+                }
+            }
+            else {
+                if (s.split(splitsym)[0].length() == 2) s = "20" + s;
+                if (type == 3) return new SimpleDateFormat("yyyy" + splitsym + "MM" + splitsym + "dd").parse(s);
+                if (type == 2) return new SimpleDateFormat("yyyy" + splitsym + "MM").parse(s);
+            }
         }catch (ParseException e){
             e.getErrorOffset();
         }
@@ -86,7 +104,7 @@ public class DateCompute {  //Todo 什么情况下class可以用private修饰
      * @return
      */
     public static Date getDate(int year, int month, int day){
-        cal.set(year, month, day);
+        cal.set(year, month-1, day);
         return cal.getTime();
     }
 

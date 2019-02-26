@@ -147,8 +147,9 @@ public class IOService {
      * @param trans 每一个数组元素代表一条交易的完整信息,且信息已经预处理好
      * @return
      */
-    public Transaction[] processTrans(List<List<String>> trans){  //Todo 要全部重写
-        Transaction[] res = new Transaction[trans.size()];
+    public Transaction[] processTrans(List<List<String>> trans){
+        //Transaction[] res = new Transaction[trans.size()];
+        List<Transaction> res = new ArrayList<>();
         try {
             for (int i = 0; i < trans.size(); i++) {
                 List<String> oneLine = trans.get(i);
@@ -162,23 +163,30 @@ public class IOService {
                     logger.warn("TC栏位读取错误，跳过此条交易");
                     continue;
                 }
-                tr.setTC( Enum.valueOf(TransCode.class, "TC" + oneLine.get(0)));
+                try {
+                    tr.setTC(Enum.valueOf(TransCode.class, "TC" + TC));
+                }catch (Exception e){
+                    logger.warn("该TC未配置");
+                    continue;
+                }
                 tr.setTransDate(DateCompute.dateForm(oneLine.get(1)));
                 tr.setRecordDate(DateCompute.dateForm(oneLine.get(2)));
                 String amt = oneLine.get(3);
-                if(!amt.matches("^[0-9]{1,}\\.{0,}[0-9]{0,}]")){
+                if(!amt.matches("^[0-9]{1,}\\.{0,}[0-9]{0,}$")){
                     logger.warn("金额栏位读取错误，跳过此条交易");
                     continue;
                 }
                 tr.setAmount(Double.parseDouble(amt));
                 tr.setSummary(oneLine.get(4));
-                res[i] = tr;
+                res.add(tr);
+                //res[i] = tr;
             }
         }catch (Exception e){
             e.printStackTrace();
         }
         //按入账顺序和TC将交易排序
-        Arrays.sort(res, new Comparator<Transaction>() {
+
+        Collections.sort(res, new Comparator<Transaction>() {
             @Override
             public int compare(Transaction o1, Transaction o2) {
                 if(DateCompute.getIntervalDays(o1.getRecordDate(),o2.getRecordDate())<0) return 1;
@@ -194,16 +202,23 @@ public class IOService {
                 }
             };
         });
-        return res;
+        Transaction[] r = new Transaction[res.size()];
+        return res.toArray(r);
 
     }
 
     /**
      * 将输入文件配置为冲账参数
-     * @param config
+     * @param path
      * @return
      */
-    public List<List<Integer>> processConfig(String config){
+    public List<List<Integer>> processConfig(String path){
+        String config = "";
+        try {
+            config = fileRead(path);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         String[] tmp = config.split("===\n");
         List<List<Integer>> res = new ArrayList<>();
         for(String s : tmp){

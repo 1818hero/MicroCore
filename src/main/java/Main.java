@@ -28,14 +28,15 @@ public class Main {
         Transaction[] trList = null;
         try {
             //trList = io.processTrans(io.fileRead("trades.txt"));
-            //strikeOrder = io.processConfig(io.fileRead("config.txt"));
+            strikeOrder = io.processConfig("./config.txt");
+            trList = io.readTransFromExcel("./readExcel.xls");
         }catch (Exception e){
             e.printStackTrace();
         }
        // System.out.println(System.getProperty("user.dir")+"\\trades.txt");
         int cycleDay = 5;       //账单日
         Date startDate = DateCompute.dateForm("2018-05-06"); //账户初始日期
-        String startCycle = "2018-05";
+        String startCycle = "2018-06";
         String endCycle = "2018-12";
         Map<Integer, Integer> strikeOrderDispatcher = new HashMap<>();
         //初始化延滞阶段对应的冲账顺序

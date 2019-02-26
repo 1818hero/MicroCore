@@ -22,7 +22,7 @@ public class Dispatcher {
     DayProcess DP;
     TransProcess TP;
     Transaction[] transList;
-    List<Transaction> firstCycleIntTrans;
+    List<Transaction> firstCycleIntTrans;   //第一个cycle的利息交易
 
 
     boolean isFirstCycleDay = true; //是否为计算利息的首个账期
