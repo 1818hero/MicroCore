@@ -102,9 +102,14 @@ public class Dispatcher {
                         DayProcess DP, TransProcess TP) {
         this.account = account;
         this.transList = transList;
-        this.startDate = DateCompute.addMonth(
-                        DateCompute.dateForm(startCycle+"-"+(account.getCycleDay()+1)),-1);
-        this.endDate = DateCompute.dateForm(endCycle+"-"+account.getCycleDay());
+        Date tmp = DateCompute.addMonth(DateCompute.dateForm(startCycle),-2);
+        tmp = DateCompute.getDate(DateCompute.getYear(tmp), DateCompute.getMonth(tmp), account.getCycleDay());
+        this.startDate = DateCompute.addDate(tmp,1);
+        tmp = DateCompute.dateForm(endCycle);
+        this.endDate = DateCompute.addDate(DateCompute.getDate(DateCompute.getYear(tmp),DateCompute.getMonth(tmp),account.getCycleDay()),1);
+
+
+        //this.endDate = DateCompute.dateForm(endCycle+"-"+account.getCycleDay());
         this.DP = DP;
         this.TP = TP;
         this.firstCycleIntTrans = new ArrayList<>();

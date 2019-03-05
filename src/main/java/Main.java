@@ -6,6 +6,7 @@ import Service.Dispatcher;
 import Service.IOService;
 import Service.TransProcess;
 import Utils.DateCompute;
+import View.SimpleFrame;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
  */
 public class Main {
     public static void main(String[] args) {
+        SimpleFrame frame = new SimpleFrame();
         IOService io = new IOService();
         List<List<Integer>> strikeOrder = null;
         Transaction[] trList = null;

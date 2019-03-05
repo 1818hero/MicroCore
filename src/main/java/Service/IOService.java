@@ -83,7 +83,13 @@ public class IOService {
             dataList.add(res);
             startCol.add(4);
         }
-        ReadWriteExcel.write2Excel(dataList,startCol,"./利息明细.xlsx");
+        try {
+            ReadWriteExcel.write2Excel(dataList, startCol, "./利息明细.xlsx");
+        }catch (Exception e){
+            logger.error("写入文件失败");
+        }
+        outputTrans.clear();
+        outputInt.clear();
 
     }
 
