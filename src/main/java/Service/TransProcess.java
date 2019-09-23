@@ -265,7 +265,8 @@ public class TransProcess {
      */
     public void processMEMO(List<Transaction> trList){
         for(Transaction tr : trList){
-            debitTrans(tr, 1);
+            //debitTrans(tr, 1);
+            debitTrans(tr.getTC().getBP(),tr.getTC().getField(),tr.getAmount(),DateCompute.addDate(tr.getRecordDate(),1),tr.getTC().isFreeInt(),1,tr.getSummary());
         }
     }
 
@@ -309,6 +310,7 @@ public class TransProcess {
     private double strikeAndAccr(List<BalanceList> BP_field, double amount, Transaction tr, int billout, Date date) {
         if (amount <= 0)    return 0.0;
         for (BalanceList BL : BP_field) {
+            if(BL.getBL().size()==0)    continue;   //如果该BL没有Node，则跳过
             double oriAmount = amount;   //备份冲抵本BalanceList的原金额
             int start = 0;              //冲抵的起点Node标识
             int p = 0;                  //冲抵到第几个Node的标识
@@ -319,7 +321,7 @@ public class TransProcess {
                 end = BL.getBL().size();
             }
             ListIterator it = BL.getBL().listIterator(start);
-            while (it.hasNext() && p++ < end) {
+            while (amount > 0 && it.hasNext() && p++ < end) {
                 BalanceNode node = (BalanceNode) it.next();
                 if (billout < 2 && node.getBillout()!=billout) break;      //如果该node的出账状态与所需不吻合，则停止冲账, 2表示不区分出账状态
                 if (!node.isExist()) continue;              //
@@ -405,7 +407,7 @@ public class TransProcess {
             int period = DateCompute.judgeCycle(account.getCycleDay(),tr.getTransDate(),tr.getRecordDate());
             if(period < 2) {    //检查是否原交易日在两周期前
                 BalanceNode tracebackNode = new BalanceNode(BL,
-                        -tracebackAmount,
+                        tracebackAmount,
                         tr.getRecordDate(),
                         tr.getTransDate(),
                         DateCompute.addDate(tr.getRecordDate(), -1),

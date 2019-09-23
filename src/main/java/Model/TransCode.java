@@ -14,11 +14,15 @@ public enum TransCode {
     TC2000(-1,-1,"R", false, false),
     TC4306(0,0,"C", false, false),
     TC5802(3,1,"D",false,false),
+    TC5902(3,1,"C",false,false),
     TC6011(4,1,"D",false,false),
     TC6111(4,1,"C",false,false),
     TC1200(0,1,"I",false,false),
+    TC1300(0,1,"C",false,false),
     TC1000(1,1,"I",false,false),
-    TC5805(2,1,"I",false,false);
+    TC1100(1,1,"C",false,false),
+    TC5805(2,1,"I",false,false),
+    TC5905(2,1,"C",false,false),;
 
     /**
      * BP对应的序号:

@@ -151,7 +151,7 @@ public class DayProcess {
                             tomorrow,
                             tomorrow,
                             tomorrow,
-                            false,
+                            BP.isFreeInt(),
                             BP.getProductAttr() + "利息余额",
                             1));
                 }
@@ -160,11 +160,11 @@ public class DayProcess {
             }
 
         }
+        account.setBNP(IBNP + BNP); //Todo 需要梳理哪些地方修改账户的BNP值
         if(!isFirstCycleDay){
             //暂时不要结果对比功能
             // if(account.getAnswer().get(curCycle) < 0||(IBNP-account.getAnswer().get(curCycle) < 0.03 && IBNP-account.getAnswer().get(curCycle)>0)){
             //Todo 输出IBNP
-            account.setBNP(IBNP + BNP);
             System.out.println(billCycle+"的利息是："+String.format("%.2f", IBNP));
             io.getOutputTrans().add(outTrans);
             io.getOutputInt().add(IBNP);
@@ -195,11 +195,13 @@ public class DayProcess {
                 BalanceList BL = field.get(0);      // Todo 利率余额写死
                 ListIterator<BalanceNode> li = BL.getBL().listIterator();
                 int count= 0;
+                int nextPointer = BL.getPointer();
                 while (li.hasNext() && count < BL.getPointer()) {
                     BalanceNode curNode = li.next();
                     if(account.getBNP() <= 10) {
                         if (curNode.isFreeInt()){
                             li.remove();
+                            nextPointer -= 1;   //更新已出未出分界指针
                         }
                     }
                     else{
@@ -207,6 +209,7 @@ public class DayProcess {
                     }
                     count += 1;
                 }
+                BL.setPointer(nextPointer);
             }
         }
 

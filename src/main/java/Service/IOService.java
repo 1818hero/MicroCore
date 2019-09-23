@@ -178,12 +178,13 @@ public class IOService {
                 tr.setTransDate(DateCompute.dateForm(oneLine.get(1)));
                 tr.setRecordDate(DateCompute.dateForm(oneLine.get(2)));
                 String amt = oneLine.get(3);
-                if(!amt.matches("^[0-9]{1,}\\.{0,}[0-9]{0,}$")){
+                amt.replaceAll(" ","");
+                if(!amt.matches("^\\-{0,1}[0-9]{1,}\\.{0,1}[0-9]{0,}$")){
                     logger.warn("金额栏位读取错误，跳过此条交易");
                     continue;
                 }
                 tr.setAmount(Double.parseDouble(amt));
-                tr.setSummary(oneLine.get(4));
+                tr.setSummary(oneLine.get(4).trim());
                 res.add(tr);
                 //res[i] = tr;
             }
@@ -191,7 +192,6 @@ public class IOService {
             e.printStackTrace();
         }
         //按入账顺序和TC将交易排序
-
         Collections.sort(res, new Comparator<Transaction>() {
             @Override
             public int compare(Transaction o1, Transaction o2) {
@@ -200,8 +200,8 @@ public class IOService {
                 else{
                     String o1direct = o1.getTC().getDirection();
                     String o2direct = o2.getTC().getDirection();
-                    if (o1direct.equals("D") && !o2direct.equals("D"))   return 1;
-                    else if (!o1direct.equals("D") && o2direct.equals("D")) return -1;
+                    if (!o1direct.equals("D") && o2direct.equals("D"))   return 1;
+                    else if (o1direct.equals("D") && !o2direct.equals("D")) return -1;
                     else
                         return Integer.parseInt(o1.getTC().toString().substring(2))
                                 - Integer.parseInt(o2.getTC().toString().substring(2));

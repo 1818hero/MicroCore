@@ -1,6 +1,9 @@
 package Model;
 
+import Service.IOService;
+
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Created by Victor on 2018/9/19.
@@ -18,8 +21,10 @@ import java.util.*;
  *
  */
 public class Account {
+    private static org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(Account.class);
     List<BalanceProgram> BP = new ArrayList<>();   //账户余额
-    double overflow;          //溢缴款
+
+    double overflow;            //溢缴款
     int cycleDay;               //账单日（每月几号）
     int lastPaymentDay;         //最后还款日（每月几号）
     int graceDay;               //宽限日（每月几号）
@@ -193,7 +198,40 @@ public class Account {
 //            answer.put(curDate, -1.0);
 //            curDate = DateCompute.addMonth(curDate, 1);
 //        }
-        //Todo 测试用
-        this.graceDay = 23;
+        Map<Integer, Integer> cycle2GraceDay = new HashMap<>();
+        cycle2GraceDay.put(1, 19);
+        cycle2GraceDay.put(2, 20);
+        cycle2GraceDay.put(3, 21);
+        cycle2GraceDay.put(4, 22);
+        cycle2GraceDay.put(5, 23);
+        cycle2GraceDay.put(6, 24);
+        cycle2GraceDay.put(7, 25);
+        cycle2GraceDay.put(8, 26);
+        cycle2GraceDay.put(9, 27);
+        cycle2GraceDay.put(10, 28);
+        cycle2GraceDay.put(11, 29);
+        cycle2GraceDay.put(12, 30);
+        cycle2GraceDay.put(13, 1);
+        cycle2GraceDay.put(14, 2);
+        cycle2GraceDay.put(15, 3);
+        cycle2GraceDay.put(16, 4);
+        cycle2GraceDay.put(17, 5);
+        cycle2GraceDay.put(18, 6);
+        cycle2GraceDay.put(19, 7);
+        cycle2GraceDay.put(20, 8);
+        cycle2GraceDay.put(21, 9);
+        cycle2GraceDay.put(22, 10);
+        cycle2GraceDay.put(23, 11);
+        cycle2GraceDay.put(24, 12);
+        cycle2GraceDay.put(25, 13);
+        cycle2GraceDay.put(26, 14);
+        cycle2GraceDay.put(27, 15);
+        cycle2GraceDay.put(28, 16);
+        try {
+            this.graceDay = cycle2GraceDay.get(cycleDay);
+        }catch (Exception e){
+            logger.error("账单日输入有误");
+        }
+
     }
 }

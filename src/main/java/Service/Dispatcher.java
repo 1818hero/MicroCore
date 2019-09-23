@@ -24,9 +24,7 @@ public class Dispatcher {
     Transaction[] transList;
     List<Transaction> firstCycleIntTrans;   //第一个cycle的利息交易
 
-
     boolean isFirstCycleDay = true; //是否为计算利息的首个账期
-
 
     /**
      * 起始日期:
@@ -74,7 +72,7 @@ public class Dispatcher {
             if(DateCompute.getDayOfMonth(today)==account.getCycleDay()){
                 DP.cycleDayProcess(isFirstCycleDay, today);
                 if(isFirstCycleDay){
-                    //首个账单日的利息MEMO类交易入账
+                    //首个账单日的利息类交易入账
                     TP.processMEMO(firstCycleIntTrans);
                     isFirstCycleDay = false;    //首个账单日不计算利息
                 }
@@ -88,7 +86,6 @@ public class Dispatcher {
             today = DateCompute.addDate(today,1);
         }
     }
-
 
     /**
      * Todo: 计算账户的最后还款日和宽限日
@@ -106,14 +103,11 @@ public class Dispatcher {
         tmp = DateCompute.getDate(DateCompute.getYear(tmp), DateCompute.getMonth(tmp), account.getCycleDay());
         this.startDate = DateCompute.addDate(tmp,1);
         tmp = DateCompute.dateForm(endCycle);
-        this.endDate = DateCompute.addDate(DateCompute.getDate(DateCompute.getYear(tmp),DateCompute.getMonth(tmp),account.getCycleDay()),1);
-
-
+         this.endDate = DateCompute.addDate(DateCompute.getDate(DateCompute.getYear(tmp),DateCompute.getMonth(tmp),account.getCycleDay()),1);
         //this.endDate = DateCompute.dateForm(endCycle+"-"+account.getCycleDay());
         this.DP = DP;
         this.TP = TP;
         this.firstCycleIntTrans = new ArrayList<>();
     }
-
 
 }

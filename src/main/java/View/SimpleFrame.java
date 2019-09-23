@@ -18,10 +18,7 @@ import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -197,6 +194,20 @@ public class SimpleFrame extends JFrame {
             @Override
             public void mouseClicked(MouseEvent e) {
                 super.mouseClicked(e);
+                try {
+                    //trList = io.processTrans(io.fileRead("trades.txt"));
+                    setStrikeOrder(getIo().processConfig("./config.txt"));
+                    setTrList(getIo().readTransFromExcel("./readExcel.xls"));
+                }catch (Exception ex){
+                    ex.printStackTrace();
+                    logger.error("读取文件失败");
+                }
+                for(int i=0; i<4; i++){
+                    getStrikeOrderDispatcher().put(i,0); //90天以内
+                }
+                for(int i=4; i<=20; i++){
+                    getStrikeOrderDispatcher().put(i,1); //90天以上
+                }
                 double RTLBal = Double.parseDouble(RTLField.getText());
                 double RTLInt = Double.parseDouble(RTLINTField.getText());
                 double CSHBal = Double.parseDouble(CSHField.getText());
@@ -218,6 +229,7 @@ public class SimpleFrame extends JFrame {
                 Date startDate = DateCompute.addDate(DateCompute.getDate(year, month, cycleDay), 1);
                 Date lastStartDate = DateCompute.addMonth(startDate, -1);
                 Account account = new Account(cycleDay, startDate, 100000000.0);
+                account.setLate(config);
                 TransProcess TP = new TransProcess(account, strikeOrder, strikeOrderDispatcher);    //加载账户和冲账顺序
                 DayProcess DP = new DayProcess(account, io);
 
@@ -246,7 +258,6 @@ public class SimpleFrame extends JFrame {
                     TP.debitTrans(4, 1, FEE, lastStartDate, false, 1, "上期年费余额");
                 }
                 Dispatcher mainThread = new Dispatcher(account, trList, startCycle, endCycle, DP, TP);
-                //mainThread.initBalance();
                 mainThread.dispatcher();
                 io.print2Excel(startCycle);
                 JOptionPane.showMessageDialog(null, "计算完成", "INFORMATION_MESSAGE",JOptionPane.INFORMATION_MESSAGE);
@@ -265,23 +276,7 @@ public class SimpleFrame extends JFrame {
 
 
     public static void main(String[] args){
-
         SimpleFrame sf = new SimpleFrame();
-        try {
-            //trList = io.processTrans(io.fileRead("trades.txt"));
-            sf.setStrikeOrder(sf.getIo().processConfig("./config.txt"));
-            sf.setTrList(sf.getIo().readTransFromExcel("./readExcel.xls"));
-        }catch (Exception e){
-            e.printStackTrace();
-            logger.error("读取文件失败");
-        }
-        for(int i=0; i<4; i++){
-            sf.getStrikeOrderDispatcher().put(i,0); //90天以内
-        }
-        for(int i=4; i<=20; i++){
-            sf.getStrikeOrderDispatcher().put(i,1); //90天以上
-        }
-
         sf.displayWindow();
 
     }
