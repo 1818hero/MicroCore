@@ -28,6 +28,7 @@ public class ReadExcel {
 //
 //    }
     // 去读Excel的方法readExcel，该方法的入口参数为一个File对象
+    private static org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(ReadExcel.class);
     public List readExcel(File file) {
         try {
             // 创建输入流，读取Excel
@@ -56,10 +57,13 @@ public class ReadExcel {
                 return outerList;
             }
         } catch (FileNotFoundException e) {
+            logger.error(e.getMessage()+"  文件未找到");
             e.printStackTrace();
         } catch (BiffException e) {
+            logger.error(e.getMessage());
             e.printStackTrace();
         } catch (IOException e) {
+            logger.error(e.getMessage());
             e.printStackTrace();
         }
         return null;

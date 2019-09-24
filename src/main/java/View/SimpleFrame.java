@@ -63,7 +63,6 @@ public class SimpleFrame extends JFrame {
     }
 
     public void displayWindow(){
-
         final SimpleFrame frame = new SimpleFrame();
         //输入部分
         JPanel textJP = new JPanel();
@@ -257,9 +256,13 @@ public class SimpleFrame extends JFrame {
                 if (MEM > 0) {
                     TP.debitTrans(4, 1, FEE, lastStartDate, false, 1, "上期年费余额");
                 }
-                Dispatcher mainThread = new Dispatcher(account, trList, startCycle, endCycle, DP, TP);
-                mainThread.dispatcher();
-                io.print2Excel(startCycle);
+                try {
+                    Dispatcher mainThread = new Dispatcher(account, trList, startCycle, endCycle, DP, TP);
+                    mainThread.dispatcher();
+                    io.print2Excel(startCycle);
+                }catch (Exception er){
+                    logger.error(er.getMessage());
+                }
                 JOptionPane.showMessageDialog(null, "计算完成", "INFORMATION_MESSAGE",JOptionPane.INFORMATION_MESSAGE);
             }
         });

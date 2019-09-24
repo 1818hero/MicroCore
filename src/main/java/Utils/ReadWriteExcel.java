@@ -9,6 +9,8 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import Service.IOService;
+import org.apache.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -21,8 +23,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class ReadWriteExcel {
     private static final String EXCEL_XLS = "xls";
     private static final String EXCEL_XLSX = "xlsx";
-
-
+    private static Logger logger = Logger.getLogger(ReadWriteExcel.class);
 
     public static void write2Excel(List<List<String>> dataList, List<Integer> startCol,  String finalXlsxPath){
         OutputStream out = null;
@@ -64,6 +65,7 @@ public class ReadWriteExcel {
             out =  new FileOutputStream(finalXlsxPath);
             workBook.write(out);
         } catch (Exception e) {
+            logger.error("写入Excel失败");
             e.printStackTrace();
         } finally{
             try {

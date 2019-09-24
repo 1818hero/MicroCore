@@ -223,6 +223,7 @@ public class IOService {
         try {
             config = fileRead(path);
         }catch (Exception e){
+            logger.error(e.getMessage()+"冲账参数配置文件读取失败");
             e.printStackTrace();
         }
         String[] tmp = config.split("===\n");
