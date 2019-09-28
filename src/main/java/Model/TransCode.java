@@ -4,7 +4,7 @@ package Model;
  * Created by Victor on 2018/9/19.
  */
 public enum TransCode {
-
+//从左到右：BP，Field，方向，是否免息，是否回算
     TC4000(0,0,"D", true, false),
     TC4100(0,0,"C", false, true),
     TC4001(2,0,"D", true, false),
@@ -13,16 +13,17 @@ public enum TransCode {
     TC3100(1,0,"C", false, true),
     TC2000(-1,-1,"R", false, false),
     TC4306(0,0,"C", false, false),
-    TC5802(3,1,"D",false,false),
-    TC5902(3,1,"C",false,false),
-    TC6011(4,1,"D",false,false),
-    TC6111(4,1,"C",false,false),
-    TC1200(0,1,"I",false,false),
-    TC1300(0,1,"C",false,false),
+    TC5802(3,0,"D",false,false),
+    TC5902(3,0,"C",false,false),
+    TC6011(4,0,"D",false,false),
+    TC6111(4,0,"C",false,false),
+    TC1200(0,1,"I",true,false),
+    TC1300(0,1,"C",true,false),
     TC1000(1,1,"I",false,false),
     TC1100(1,1,"C",false,false),
-    TC5805(2,1,"I",false,false),
-    TC5905(2,1,"C",false,false),;
+    TC5805(2,1,"I",true,false),
+    TC5905(2,1,"C",true,false);
+
 
     /**
      * BP对应的序号:

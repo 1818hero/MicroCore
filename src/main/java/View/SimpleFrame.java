@@ -257,21 +257,21 @@ public class SimpleFrame extends JFrame {
                     TP.debitTrans(4, 1, FEE, lastStartDate, false, 1, "上期年费余额");
                 }
                 try {
+                    if(DateCompute.getIntervalDays(DateCompute.dateForm(startCycle),DateCompute.dateForm(endCycle))<0){
+                        JOptionPane.showMessageDialog(null, "账期输入有误", "错误",JOptionPane.ERROR_MESSAGE);
+                        throw new Exception("Input Error");
+                    }
                     Dispatcher mainThread = new Dispatcher(account, trList, startCycle, endCycle, DP, TP);
                     mainThread.dispatcher();
                     io.print2Excel(startCycle);
+                    JOptionPane.showMessageDialog(null, "计算完成", "INFORMATION_MESSAGE",JOptionPane.INFORMATION_MESSAGE);
                 }catch (Exception er){
                     logger.error(er.getMessage());
                 }
-                JOptionPane.showMessageDialog(null, "计算完成", "INFORMATION_MESSAGE",JOptionPane.INFORMATION_MESSAGE);
             }
         });
-
         textJP.add(jbInt);
         textJP.add(jbminPay);
-
-
-
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }

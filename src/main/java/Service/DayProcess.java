@@ -55,7 +55,8 @@ public class DayProcess {
         }
         for (BalanceProgram BP : account.getBP()){
             double ints = 0.0;              //记录该BP的出账利息
-            for(List<BalanceList> field : BP.getBalance()){
+            for(int fieldNum = 0; fieldNum < BP.getBalance().size(); fieldNum++){
+                List<BalanceList> field = BP.getBalance().get(fieldNum);
                 BalanceList BL = field.get(0);  //Todo 利率余额写死
                 BL.setBNP(BL.getBNP()+BL.getCTD());
                 BL.setCTD(0.0);
@@ -107,7 +108,13 @@ public class DayProcess {
                 }
                 // 新建上期余额节点
                 if(lastBalance>0) {
-                    String summary = "上期" + BL.getBP().getProductAttr() + "余额";
+                    String summary;
+                    if(fieldNum == 0) {
+                        summary ="上期" + BL.getBP().getProductAttr() + "余额";
+                    }
+                    else{
+                        summary ="上期" + BL.getBP().getProductAttr() + "利息余额";
+                    }
                     BL.getBL().addLast(new BalanceNode(BL,
                             lastBalance,
                             tomorrow,
@@ -116,6 +123,7 @@ public class DayProcess {
                             BP.isFreeInt(),
                             summary,
                             1));
+                    account.setBNP(account.getBNP()+lastBalance);
                 }
                 /**
                  * 4. 重置pointer
@@ -124,57 +132,49 @@ public class DayProcess {
                 //Todo 统计最低还款额
 
             }
-            /**
-             * 新建利息余额节点,如果出利息时有溢缴款，则先用溢缴款冲抵
-             */
-            if(ints > 0 && !isFirstCycleDay) {
-                IBNP += ints;       //先出利息，再处理溢缴款
-                if(account.getOverflow() >= ints){
-                    account.setOverflow(account.getOverflow()-ints);
-                    ints = 0.0;
-                }
-                else{
-                    ints -= account.getOverflow();
-                    account.setOverflow(0.0);
-                }
-
-                BalanceList intBL = BP.getBalance().get(1).get(0);  //Todo 利率余额写死
-                BalanceNode intNode;
-                if (intBL.getBL().size()>0) {
-                    intNode = intBL.getBL().getLast();
-                    intNode.setAmount(intNode.getAmount()+ints);
-                    intNode.setSummary(BP.getProductAttr() + "利息余额");
-                }
-                else {
-                    intBL.getBL().addLast(new BalanceNode(intBL,
-                            ints,
-                            tomorrow,
-                            tomorrow,
-                            tomorrow,
-                            BP.isFreeInt(),
-                            BP.getProductAttr() + "利息余额",
-                            1));
-                }
-                intBL.setBNP(ints+intBL.getBNP());
-                intBL.setPointer(intBL.getBL().size());
-            }
+            IBNP += ints;       //IBNP仅用作展示，不入账
+//            /**
+//             * 新建利息余额节点,如果出利息时有溢缴款，则先用溢缴款冲抵
+//             */
+//            if(ints > 0 && !isFirstCycleDay) {
+//                IBNP += ints;       //先出利息，再处理溢缴款
+//                if(account.getOverflow() >= ints){
+//                    account.setOverflow(account.getOverflow()-ints);
+//                    ints = 0.0;
+//                }
+//                else{
+//                    ints -= account.getOverflow();
+//                    account.setOverflow(0.0);
+//                }
+//
+//                BalanceList intBL = BP.getBalance().get(1).get(0);  //Todo 利率余额写死
+//                BalanceNode intNode;
+//                if (intBL.getBL().size()>0) {
+//                    intNode = intBL.getBL().getLast();
+//                    intNode.setAmount(intNode.getAmount()+ints);
+//                    intNode.setSummary(BP.getProductAttr() + "利息余额");
+//                }
+//                else {
+//                    intBL.getBL().addLast(new BalanceNode(intBL,
+//                            ints,
+//                            tomorrow,
+//                            tomorrow,
+//                            tomorrow,
+//                            BP.isFreeInt(),
+//                            BP.getProductAttr() + "利息余额",
+//                            1));
+//                }
+//                intBL.setBNP(ints+intBL.getBNP());
+//                intBL.setPointer(intBL.getBL().size());
+//            }
 
         }
-        account.setBNP(IBNP + BNP); //Todo 需要梳理哪些地方修改账户的BNP值
-        if(!isFirstCycleDay){
-            //暂时不要结果对比功能
-            // if(account.getAnswer().get(curCycle) < 0||(IBNP-account.getAnswer().get(curCycle) < 0.03 && IBNP-account.getAnswer().get(curCycle)>0)){
-            //Todo 输出IBNP
-            System.out.println(billCycle+"的利息是："+String.format("%.2f", IBNP));
+//        account.setBNP(IBNP + BNP);
+        if (!isFirstCycleDay) {
+            System.out.println(billCycle + "的利息是：" + String.format("%.2f", IBNP));
             io.getOutputTrans().add(outTrans);
             io.getOutputInt().add(IBNP);
-            //}
-//                else{
-//                    //Todo 打印错误信息
-//
-//                }
         }
-
     }
     /**
      * TODO: 最后还款日逻辑
@@ -198,7 +198,7 @@ public class DayProcess {
                 int nextPointer = BL.getPointer();
                 while (li.hasNext() && count < BL.getPointer()) {
                     BalanceNode curNode = li.next();
-                    if(account.getBNP() <= 10) {
+                    if(account.getBNP() <= 0) {
                         if (curNode.isFreeInt()){
                             li.remove();
                             nextPointer -= 1;   //更新已出未出分界指针

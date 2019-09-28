@@ -59,17 +59,16 @@ public class Dispatcher {
                 if(transList[transIndex].getRecordDate().equals(today)){
                     //根据账户延滞状态判断采用哪套冲账顺序
                     Transaction memo = TP.transRoute(transList[transIndex]);
-                    if(memo!=null && isFirstCycleDay){
-                        firstCycleIntTrans.add(memo);
-                    }
+//                    if(memo!=null && isFirstCycleDay){
+//                        firstCycleIntTrans.add(memo);
+//                    }
                 }
                 transIndex += 1;
             }
             if(DateCompute.getDayOfMonth(today)==account.getCycleDay()){
                 DP.cycleDayProcess(isFirstCycleDay, today);
                 if(isFirstCycleDay){
-                    //首个账单日的利息类交易入账
-                    TP.processMEMO(firstCycleIntTrans);
+                    //TP.processMEMO(firstCycleIntTrans);
                     isFirstCycleDay = false;    //首个账单日不计算利息
                 }
             }

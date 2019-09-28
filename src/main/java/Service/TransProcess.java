@@ -2,6 +2,7 @@ package Service;
 
 import Model.*;
 import Utils.DateCompute;
+import org.apache.log4j.Logger;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -11,6 +12,8 @@ import java.util.regex.Pattern;
  * Created by Victor on 2018/10/29.
  */
 public class TransProcess {
+    private static Logger logger = Logger.getLogger(TransProcess.class);
+
     Account account;
     /**
      * K： Account的延滞状态
@@ -36,7 +39,7 @@ public class TransProcess {
      */
     private void repayment (Transaction repay){
         double amount = Math.abs(repay.getAmount()); //该值在交易读取时为负值，先取绝对值
-        account.setBNP(Math.max(account.getBNP()-amount,0));
+        account.setBNP(Math.max(account.getBNP()-amount,0));    //用于判断是否免息
         List<Integer> strikeOrder = strikeOrderList.get(strikeOrderDispatcher.get(account.getLate()));
         for(int i=0; i<strikeOrder.size(); i+=3){
             //定位某个BP下的某个栏位,不考虑get不到的情况
@@ -65,7 +68,7 @@ public class TransProcess {
         int billout = 0;       //交易日在当期
         if(period == 1){         //交易日在往期
             billout = 1;       //冲抵BNP
-            account.setBNP(Math.max(account.getBNP()-amount,0));
+            account.setBNP(Math.max(account.getBNP()-amount,0));    //用于判断是否免息
         }
         TransCode TC = credit.getTC();
         //从冲账顺序表中查找冲抵栏位
@@ -93,70 +96,17 @@ public class TransProcess {
      * @param billout 入账交易是已出交易还是未出交易
      */
     private void debitTrans(Transaction debit, int billout){
-        double amount = debit.getAmount();
-        //处理溢缴款
-        if(account.getOverflow() >= amount){
-            account.setOverflow(account.getOverflow()-amount);
-            return;
-        }
-        else{
-            amount -= account.getOverflow();
-            account.setOverflow(0);
-        }
         TransCode TC = debit.getTC();
-        BalanceProgram targetBP = account.getBP().get(TC.getBP());
-        List<BalanceList> field = targetBP.getBalance().get(TC.getField());
-        //如果该栏位没有BalanceList，则以当前利率创建一条
-        if(field.size()==0){
-            field.add(new BalanceList(targetBP,account.getAccRate(),TC.getField()));
-        }
-        int index = findRate(field);    //
-        if(index < 0){
-            field.add(0, new BalanceList(targetBP, account.getAccRate(), TC.getField()));
-            index = 0;
-        }
-        else if (account.getAccRate() < field.get(index).getRate()){
-            field.add(index, new BalanceList(targetBP, account.getAccRate(), TC.getField()));
-        }
         Date startDate;
         if (TC.isTraceback())    startDate = debit.getTransDate();
         else    startDate = debit.getRecordDate();  //以交易属性直接判断是否回算
-        BalanceList curBalanceList = field.get(index);
-        BalanceNode oriNode = null;
-        BalanceNode newNode = null;
-        if(curBalanceList.getBL().size() > 0)    oriNode = curBalanceList.getBL().getLast();
-        /**
-         * 对于息费类交易入账，直接在原Node基础上增加值
-         */
-        if (curBalanceList.getType()==1 && oriNode != null && oriNode.isExist()) {
-            oriNode.setExist(false);
-            oriNode.setEndDate(DateCompute.addDate(debit.getRecordDate(), -1));
-            //if (node.getBL().getBP().getWaive()==0) {      //判断waive标识
-            //计算利息
-            double intrests = oriNode.getAmount() * curBalanceList.getRate()
-                    * (DateCompute.getIntervalDays(oriNode.getStartDate(), oriNode.getEndDate())+1);
-            oriNode.setIntrests(intrests);
-            newNode = new BalanceNode(curBalanceList,
-                    oriNode.getAmount()+amount,
-                    debit.getRecordDate(),
-                    debit.getRecordDate(),
-                    debit.getRecordDate(),
-                    TC.isFreeInt(),
-                    debit.getSummary(),
-                    billout);
-        }
-        else{
-            newNode = new BalanceNode(curBalanceList, amount, debit.getRecordDate(), startDate,
-                    debit.getRecordDate(), TC.isFreeInt(), debit.getSummary(), billout);
-        }
-        curBalanceList.getBL().addLast(newNode);
-        if(billout==0) {
-            curBalanceList.setCTD(curBalanceList.getCTD() + amount);  //入账后CTD/BNP累计值增加
-        }
-        else{
-            curBalanceList.setBNP(curBalanceList.getBNP() + amount);
-        }
-
+        debitTrans(TC.getBP(),
+                TC.getField(),
+                debit.getAmount(),
+                startDate,
+                TC.isFreeInt(),
+                billout,
+                debit.getSummary());
     }
 
     /**
@@ -170,12 +120,22 @@ public class TransProcess {
      * @param summary
      */
     public void debitTrans(int BPNum, int FieldNum, double amount, Date startDate, boolean freeInt, int billout, String summary){
+        //处理溢缴款
+        if(account.getOverflow() >= amount){
+            account.setOverflow(account.getOverflow()-amount);
+            return;
+        }
+        else{
+            amount -= account.getOverflow();
+            account.setOverflow(0);
+        }
         BalanceProgram targetBP = null;
         List<BalanceList> field = null;
         try {
             targetBP = account.getBP().get(BPNum);
             field = targetBP.getBalance().get(FieldNum);
         }catch (Exception e){
+            logger.error(e.getMessage() + "借方交易" + summary +"处理出错:"+"找不到对应的BP栏位");
             e.printStackTrace();
         }
         //如果该栏位没有BalanceList，则以当前利率创建一条
@@ -192,10 +152,10 @@ public class TransProcess {
         }
         BalanceList curBalanceList = field.get(index);
         BalanceNode oriNode = null;
-        BalanceNode newNode = null;
+        BalanceNode newNode;
         if(curBalanceList.getBL().size() > 0)    oriNode = curBalanceList.getBL().getLast();
         /**
-         * 对于息费类交易入账，直接在原Node基础上增加值
+         * 对于利息类交易入账，直接在原Node基础上增加值
          */
         if (curBalanceList.getType()==1 && oriNode != null && oriNode.isExist()) {
             oriNode.setExist(false);
@@ -228,45 +188,53 @@ public class TransProcess {
 
     }
 
-
-
     /**
      * 根据TC决定每个交易由哪个方法处理
-     * 不处理Memo类交易，直接返回
-     * @param
+     *  @param
      */
     public Transaction transRoute(Transaction t){
         TransCode TC = t.getTC();
         if(TC.getDirection().equals("R")){
             repayment(t);
-            return null;
         }
-//        else if((TC.equals(TransCode.TC3000) && !isFirstCycleDay) //非首月才读取取现交易
-//                || (!TC.equals(TransCode.TC3000) && TC.getDirection().equals('D'))){
-//            debitTrans(t);
-//        }
         else if(TC.getDirection().equals("D")){
             debitTrans(t, 0);
-            return null;
         }
         else if(TC.getDirection().equals("C")){
             creditTrans(t);
-            return null;
         }
         else if(TC.getDirection().equals("I")){
-            return t;
+            //特殊处理利息交易的起息日
+            if(DateCompute.getDayOfMonth(t.getRecordDate())==account.getCycleDay()) {
+                debitTrans(TC.getBP(),
+                        TC.getField(),
+                        t.getAmount(),
+                        DateCompute.addDate(t.getRecordDate(), 1),  //  利息类交易起息日+1
+                        TC.isFreeInt(),
+                        1,
+                        t.getSummary());
+            }
+            else{
+                debitTrans(t,0);
+            }
         }
         return null;
-        // 可能有未收录的交易，则不处理
+        // 未收录的交易，则不处理
     }
 
     /**
-     * 批量处理首个账单日的利息MEMO交易
+     * （废）批量处理首个账单日的利息MEMO交易
      */
     public void processMEMO(List<Transaction> trList){
         for(Transaction tr : trList){
             //debitTrans(tr, 1);
-            debitTrans(tr.getTC().getBP(),tr.getTC().getField(),tr.getAmount(),DateCompute.addDate(tr.getRecordDate(),1),tr.getTC().isFreeInt(),1,tr.getSummary());
+            debitTrans(tr.getTC().getBP(),
+                       tr.getTC().getField(),
+                       tr.getAmount(),
+                       DateCompute.addDate(tr.getRecordDate(),1),
+                       tr.getTC().isFreeInt(),
+                       1,
+                       tr.getSummary());
         }
     }
 
@@ -362,7 +330,7 @@ public class TransProcess {
                         leftNode.setAnoSummary(node.getAnoSummary()+"("+tr.getSummary()+")");
                     }
                     else {
-                        leftNode.setAnoSummary("("+tr.getSummary()+")");
+                        leftNode.setAnoSummary("(被交易【"+tr.getSummary()+"】冲抵后剩余部分)");
                     }
                     it.add(leftNode);   //在原Node后添加该Node，因此end就需要增加1
                     end += 1;
